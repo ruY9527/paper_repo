@@ -1,0 +1,68 @@
+site_name: "PaperFlow 2026 — 顶会顶刊论文精读库"
+site_description: "2026 CVPR / ECCV / NeurIPS / ICLR / AAAI / TPAMI / TIP / IJCV 自动化追踪与深度解析"
+site_url: "https://ruY9527.github.io/paper_repo/"
+repo_url: "https://github.com/ruY9527/paper_repo"
+repo_name: "ruY9527/paper_repo"
+site_dir: site
+theme:
+  name: material
+  language: zh
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: 切换暗色模式
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: 切换亮色模式
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - tags
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - 首页: index.md
+  - 顶会总表:
+      - CVPR: venues/CVPR-2026.md
+      - ECCV: venues/ECCV-2026.md
+      - ICCV: venues/ICCV-2026.md
+      - NeurIPS: venues/NeurIPS-2026.md
+      - ICLR: venues/ICLR-2026.md
+      - AAAI: venues/AAAI-2026.md
+      - TPAMI: venues/TPAMI-2026.md
+      - TIP: venues/TIP-2026.md
+      - IJCV: venues/IJCV-2026.md
+  - 知识矩阵:
+      - SOTA 对比: matrix/sota-2026.md
+      - 开源代码精选: matrix/open-source-2026.md

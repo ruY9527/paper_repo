@@ -1,0 +1,8 @@
+# MkDocs 构建产物
+site/
+../workspace/mkdocs_site/
+
+# 系统文件
+Thumbs.db
+desktop.ini
+.DS_Store
