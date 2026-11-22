@@ -2,50 +2,74 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://ruY9527.github.io/paper_repo/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/matrix/open-source-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/matrix/sota-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ruY9527.github.io/paper_repo/papers/2026/arXiv/arxiv_2611.26613/</loc>
+         <lastmod>2026-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ruY9527.github.io/paper_repo/papers/2026/arXiv/arxiv_2611.26624/</loc>
+         <lastmod>2026-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ruY9527.github.io/paper_repo/sites/</loc>
+         <lastmod>2026-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ruY9527.github.io/paper_repo/topics/agent/</loc>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/AAAI-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/CVPR-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/ECCV-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/ICCV-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/ICLR-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/IJCV-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/NeurIPS-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/TIP-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
     </url>
     <url>
          <loc>https://ruY9527.github.io/paper_repo/venues/TPAMI-2026/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ruY9527.github.io/paper_repo/weekly/2026-W47/</loc>
+         <lastmod>2026-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ruY9527.github.io/paper_repo/weekly/2026-W53/</loc>
+         <lastmod>2026-11-22</lastmod>
     </url>
 </urlset>
