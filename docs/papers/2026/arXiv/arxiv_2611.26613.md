@@ -123,7 +123,7 @@ move_eef(
 - O_post_t：动作执行后的多视角相机观测。
 - O_aux_t：可选的短时后续帧。原文例子中 gripper closure 后要跟一个 lift check，用来验证物体是否真被捕获并保持。
 
-论文把这些合并成观测窗口 O_t = (O_pre_t, O_post_t, O_aux_t)。轨迹 τ = {(O_pre_t, a_t, g_t, O_post_t)}。注意公式里 τ 没把 O_aux_t 写进去，但 critic 输入 O_t 包含它。
+论文把这些合并成观测窗口 $O_t = (O_pre_t, O_post_t, O_aux_t)$。轨迹 τ = {(O_pre_t, a_t, g_t, O_post_t)}。注意公式里 τ 没把 O_aux_t 写进去，但 critic 输入 O_t 包含它。
 
 ### 5.3 critic 端：对照局部意图给判定
 
@@ -183,7 +183,9 @@ critic 用 GPT-6 Astra，输入三件东西：全局目标 G、本地意图 g_t�
 
 论文 Equation (1)：
 
+$$
 a_t ~ π(· | G, O_pre_t, h_t)
+$$
 
 含义：在第 t 个决策 turn，策略 π 根据全局任务指令 G、当前动作前观测 O_pre_t、交互历史 h_t，采样一个低层控制命令 a_t。a_t 可以是 6-DoF end-effector pose、joint configuration、gripper opening 或 primitive motion trajectory。
 
@@ -193,9 +195,13 @@ a_t ~ π(· | G, O_pre_t, h_t)
 
 论文 Equation (2)：
 
+$$
 (a_t, g_t) ~ π(· | G, O_pre_t, h_t)
+$$
 
+$$
 τ = {(O_pre_t, a_t, g_t, O_post_t)}_{t=1}^T
+$$
 
 这一步只是在输出里多了一个 g_t。g_t 是自然语言 local intent，说明 a_t 的 immediate sub-goal。轨迹 τ 每一步记录动作前观测、动作、意图、动作后观测。
 
@@ -211,9 +217,11 @@ a_t ~ π(· | G, O_pre_t, h_t)
 
 论文 Equation (3)：
 
+$$
 (ŷ_t, m̂_t, ê_t) = C(G, g_t, O_t)
+$$
 
-其中 O_t = (O_pre_t, O_post_t, O_aux_t)。
+其中 $O_t = (O_pre_t, O_post_t, O_aux_t)$。
 
 ŷ_t ∈ Y，m̂_t ∈ M ∪ {∅}，成功时 m̂_t = ∅。ê_t 是诊断说明。
 
@@ -440,7 +448,7 @@ g_t 改写成可证伪的条件：
 - 禁止出现的副作用 q_t，例如伪影边缘、热目标扩散、色彩漂移；
 - 测量证据 e_t，例如局部梯度分布、显著目标 SNR、无参考质量图、人类偏好。
 
-输出不是自由文本，而是结构化契约：g_t = (R_t, p_t, q_t, e_t, threshold_t)。
+输出不是自由文本，而是结构化契约：$g_t = (R_t, p_t, q_t, e_t, threshold_t)$。
 
 **3. Multi-Branch Replay Critic**
 critic 不只看执行后的图，而是同时看候选动作在小范围试执行后的结果。它回答三个问题：
@@ -561,3 +569,11 @@ critic 不只看执行后的图，而是同时看候选动作在小范围试执�
   ]
 }
 -->
+
+---
+
+<!-- AI-GENERATED-NOTICE -->
+!!! note "内容由 AI 生成，请审慎甄别"
+    本站的论文解读、摘要速览与网站点评均由人工智能自动整理生成，仅用于学习与快速检索。
+    AI 输出可能存在事实偏差、理解误差或信息滞后，涉及关键结论、数据与观点时，
+    请以论文原文及官方来源为准，并自行判断其准确性。

@@ -281,15 +281,21 @@ paper_url: "https://arxiv.org/abs/2611.26624"
 
 设 ze 是第 e 局的归一化表现。前段均值：
 
+$$
 zB = (1/3) · Σ(e=1..3) ze
+$$
 
 后段均值：
 
+$$
 zL = (1/3) · Σ(e=8..10) ze
+$$
 
 学习增益：
 
+$$
 Mgain = 100 · (zL − zB)
+$$
 
 单位：百分点（percentage points）。为什么乘 100？因为归一化后在 0–1 之间，乘 100 变成人类好读的分数。为什么用 1–3 和 8–10？这是 `Learn2Play Bench (Li et al., 2026)` 的约定，避开中间局，取早期和晚期两个稳定段。
 
@@ -299,7 +305,9 @@ Mgain = 100 · (zL − zB)
 
 普通最小二乘斜率公式：
 
+$$
 Mslope = 100 · [Σ(e=1..10)(e − ē)(ze − z̄)] / [Σ(e=1..10)(e − ē)²]
+$$
 
 其中 ē = 5.5（1 到 10 的平均），z̄ = (1/10)·Σ ze。
 
@@ -562,3 +570,11 @@ innovation_tags:
   - "mastery-oriented objective via learning gain and learning slope"
   - "fresh-run evaluation across three agent intelligence settings"
   - "transferable paradigm for agent-driven image fusion (inferred, not implemented)"
+
+---
+
+<!-- AI-GENERATED-NOTICE -->
+!!! note "内容由 AI 生成，请审慎甄别"
+    本站的论文解读、摘要速览与网站点评均由人工智能自动整理生成，仅用于学习与快速检索。
+    AI 输出可能存在事实偏差、理解误差或信息滞后，涉及关键结论、数据与观点时，
+    请以论文原文及官方来源为准，并自行判断其准确性。
