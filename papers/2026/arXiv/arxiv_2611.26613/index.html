@@ -1524,7 +1524,7 @@
 - O_pre_t：动作执行前的多视角相机观测。
 - O_post_t：动作执行后的多视角相机观测。
 - O_aux_t：可选的短时后续帧。原文例子中 gripper closure 后要跟一个 lift check，用来验证物体是否真被捕获并保持。</p>
-<p>论文把这些合并成观测窗口 O_t = (O_pre_t, O_post_t, O_aux_t)。轨迹 τ = {(O_pre_t, a_t, g_t, O_post_t)}。注意公式里 τ 没把 O_aux_t 写进去，但 critic 输入 O_t 包含它。</p>
+<p>论文把这些合并成观测窗口 <span class="arithmatex">\(O_t = (O_pre_t, O_post_t, O_aux_t)\)</span>。轨迹 τ = {(O_pre_t, a_t, g_t, O_post_t)}。注意公式里 τ 没把 O_aux_t 写进去，但 critic 输入 O_t 包含它。</p>
 <h3 id="53-critic">5.3 critic 端：对照局部意图给判定<a class="headerlink" href="#53-critic" title="Permanent link">&para;</a></h3>
 <p>critic 用 GPT-6 Astra，输入三件东西：全局目标 G、本地意图 g_t、观测窗口 O_t。输出三元组 (ŷ_t, m̂_t, ê_t)。</p>
 <p>结果标签 Y = {Achieved, Failed, Partial, Unverifiable}。论文说在完整动作上可化为二分类；Partial 用于有意的分段动作；Unverifiable 用于遮挡或录制截断。</p>
@@ -1563,13 +1563,19 @@
 <p>这篇论文没有提出新的优化目标或理论定理。它有几个简单但关键的建模公式，值得一步步拆开。</p>
 <h3 id="61">6.1 直接机器人控制的策略公式<a class="headerlink" href="#61" title="Permanent link">&para;</a></h3>
 <p>论文 Equation (1)：</p>
-<p>a_t ~ π(· | G, O_pre_t, h_t)</p>
+<div class="arithmatex">\[
+a_t ~ π(· | G, O_pre_t, h_t)
+\]</div>
 <p>含义：在第 t 个决策 turn，策略 π 根据全局任务指令 G、当前动作前观测 O_pre_t、交互历史 h_t，采样一个低层控制命令 a_t。a_t 可以是 6-DoF end-effector pose、joint configuration、gripper opening 或 primitive motion trajectory。</p>
 <p>和普通 VLA 的差别在表达形式：frontier agent 把这些数值动作写成 structured text，通过语言生成接口输出，不需要额外 action head 或连续 policy decoder。</p>
 <h3 id="62">6.2 加局部意图后的策略与轨迹<a class="headerlink" href="#62" title="Permanent link">&para;</a></h3>
 <p>论文 Equation (2)：</p>
-<p>(a_t, g_t) ~ π(· | G, O_pre_t, h_t)</p>
-<p>τ = {(O_pre_t, a_t, g_t, O_post_t)}_{t=1}^T</p>
+<div class="arithmatex">\[
+(a_t, g_t) ~ π(· | G, O_pre_t, h_t)
+\]</div>
+<div class="arithmatex">\[
+τ = {(O_pre_t, a_t, g_t, O_post_t)}_{t=1}^T
+\]</div>
 <p>这一步只是在输出里多了一个 g_t。g_t 是自然语言 local intent，说明 a_t 的 immediate sub-goal。轨迹 τ 每一步记录动作前观测、动作、意图、动作后观测。</p>
 <p>从评价角度看，这个改动把"动作评价"从条件在 G 上变成条件在 g_t 上。形式上可以写成对比：</p>
 <p>没有 g_t 时：判断 a_t 是否推进 G。问题是 P(success | a_t, G) 对中间路径不敏感，多个物理状态都可能算推进，评价不可判定。</p>
@@ -1577,8 +1583,10 @@
 <p>这就是论文说的 well-posed。</p>
 <h3 id="63-critic">6.3 critic 映射<a class="headerlink" href="#63-critic" title="Permanent link">&para;</a></h3>
 <p>论文 Equation (3)：</p>
-<p>(ŷ_t, m̂_t, ê_t) = C(G, g_t, O_t)</p>
-<p>其中 O_t = (O_pre_t, O_post_t, O_aux_t)。</p>
+<div class="arithmatex">\[
+(ŷ_t, m̂_t, ê_t) = C(G, g_t, O_t)
+\]</div>
+<p>其中 <span class="arithmatex">\(O_t = (O_pre_t, O_post_t, O_aux_t)\)</span>。</p>
 <p>ŷ_t ∈ Y，m̂_t ∈ M ∪ {∅}，成功时 m̂_t = ∅。ê_t 是诊断说明。</p>
 <p>这个映射没有可微分训练目标；主实验里 C 是 GPT-6 Astra 通过 prompt 和 protocol 实现的。开源 critic 才用监督微调，把 C 蒸馏成 Muse-Glimmer-30B。</p>
 <h3 id="64">6.4 局部意图消融为什么有效：一个信息论式理解<a class="headerlink" href="#64" title="Permanent link">&para;</a></h3>
@@ -1726,7 +1734,7 @@ g_t 改写成可证伪的条件：
 - 要保留/增强的属性 p_t，例如小目标对比度、边缘连续性、纹理方差；
 - 禁止出现的副作用 q_t，例如伪影边缘、热目标扩散、色彩漂移；
 - 测量证据 e_t，例如局部梯度分布、显著目标 SNR、无参考质量图、人类偏好。</p>
-<p>输出不是自由文本，而是结构化契约：g_t = (R_t, p_t, q_t, e_t, threshold_t)。</p>
+<p>输出不是自由文本，而是结构化契约：<span class="arithmatex">\(g_t = (R_t, p_t, q_t, e_t, threshold_t)\)</span>。</p>
 <p><strong>3. Multi-Branch Replay Critic</strong>
 critic 不只看执行后的图，而是同时看候选动作在小范围试执行后的结果。它回答三个问题：
 - 选中的动作是否满足自己的契约？
@@ -1840,6 +1848,15 @@ critic 不只看执行后的图，而是同时看候选动作在小范围试执�
   ]
 }
 -->
+
+<hr />
+<!-- AI-GENERATED-NOTICE -->
+<div class="admonition note">
+<p class="admonition-title">内容由 AI 生成，请审慎甄别</p>
+<p>本站的论文解读、摘要速览与网站点评均由人工智能自动整理生成，仅用于学习与快速检索。
+AI 输出可能存在事实偏差、理解误差或信息滞后，涉及关键结论、数据与观点时，
+请以论文原文及官方来源为准，并自行判断其准确性。</p>
+</div>
 
 
 
