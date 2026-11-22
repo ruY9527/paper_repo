@@ -23,6 +23,13 @@ critic_model_url: "https://huggingface.co/cx-cmu/AgentRoboCritic-Muse-Glimmer-30
 
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 先说清楚一件事：这篇论文不是图像融合论文。它研究的是 frontier multimodal language agent 直接输出低层数值动作控制机器人，也就是把 GPT-6 Astra 这类模型当成 robot policy 用。用户给的"Agent+图像融合方向专属侧重"要求覆盖动态算子调度、退化感知路由、自适应提示生成、多模态工具链、端到端闭环反馈、融合质量提升来源。原文没有这些内容。我不会把这些写成论文主张。能做的是把它的真实机制形式化，再在明确标注为"迁移推断"的前提下，讨论它如何映射到图像融合的 Agent 化设计。凡是论文没说的，我都会写清楚来源层级。
 
 信息标签约定：

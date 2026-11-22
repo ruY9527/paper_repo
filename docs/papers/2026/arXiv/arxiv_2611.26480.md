@@ -10,6 +10,13 @@ code_url: "https://github.com/MEKHALA/agent-runtime-capacity"
 paper_url: "https://arxiv.org/abs/2611.26480"
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 ## 0. 阅读约定：证据分级与一个必须先说清的错配
 
 本文严格区分四类信息，正文用短标记标注：**【原文】**论文明确声称，**【文献】**论文引用或公开文档已有的结论，**【推断】**基于论文证据的合理推断，**【猜想】**尚未验证的设想。

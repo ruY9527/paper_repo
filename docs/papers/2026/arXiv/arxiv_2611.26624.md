@@ -18,6 +18,13 @@ code_url: "https://github.com/xt4d/PlayCraft"
 paper_url: "https://arxiv.org/abs/2611.26624"
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 # PlayCraft 深度解析：把 Agent 的"玩"变成设计证据
 
 ## 先把一件事说清楚：这篇论文和图像融合的关系

@@ -10,6 +10,13 @@ code_url: "N/A"
 paper_url: "https://arxiv.org/abs/2611.26435"
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 ## 1. 论文提出并解决的研究问题是什么，为什么重要
 
 **论文明确声称**：本文处理的是在线多租户服务场景下的 Agentic LLM KV  cache 膨胀问题。Agent 一次任务包含几十到几百次模型调用，每次工具输出都追加进上下文。生产 trace 中 90 分位 session 发起超过 100 次模型调用，Codex 达到 241 次，上下文峰值 186K token，Codex 为 235K token。即使使用混合线性注意力或 latent attention，一个 128K token 的 GLM-4.5 请求也占约 40 GB HBM，两个就填满 H100 的 80 GB。

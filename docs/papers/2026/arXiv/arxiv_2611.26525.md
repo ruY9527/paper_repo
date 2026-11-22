@@ -10,6 +10,13 @@ code_url: "未公开（论文仅承诺发布到 GitHub）"
 paper_url: "https://arxiv.org/abs/2611.26525"
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 信息标记约定：本文用 **P** 表示论文原文明确声称，用 **L** 表示相关文献已有结论，用 **I** 表示基于证据的合理推断，用 **S** 表示不确定的猜测。涉及图像融合的内容，原文没有任何实验或设计，相关段落会显式标注为 **I** 或 **S**，并与论文事实分开。
 
 ---

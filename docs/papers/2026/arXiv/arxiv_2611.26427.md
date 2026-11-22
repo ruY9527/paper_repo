@@ -18,6 +18,13 @@ code_url: https://github.com/xuyang-liu16/MemFolder
 paper_url: https://arxiv.org/abs/2611.26427
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 # MemFolder 深度解析：Agent 如何同时折叠记录数与上下文长度
 
 > 信息分级说明。本文严格区分四类陈述：【论文声称】指原文明确写出的结论或数字；【文献结论】指论文引用的已有工作所支持的判断；【推断】指基于原文证据做出的合理推理；【猜测】指目前无直接证据的设想。所有数字均来自原文正文，未做二次加工。

@@ -10,6 +10,13 @@ code_url: "https://rogue-ai.surge.sh"
 paper_url: "https://arxiv.org/abs/2611.26553"
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 # ROGUE-AI 深度解析：把 Agent 事故报告变成可复现的因果实验
 
 ## 先说清楚一件事：这篇论文和图像融合没有关系

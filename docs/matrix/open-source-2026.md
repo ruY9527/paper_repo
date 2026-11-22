@@ -1,9 +1,14 @@
 # 2026 开源代码精选库
 
-共 **0** 篇论文附带开源代码。
+共 **5** 篇论文附带开源代码。
 
 | 论文 | Venue | Stars | 代码仓库 |
 | :--- | :--- | ---: | :--- |
+| [MemFolder: Structure-Guided Memory Folding for Efficient Agent Memory Management](../papers/2026/arXiv/arxiv_2611.26427.md) | arXiv | — | [代码仓库](https://github.com/xuyang-liu16/MemFolder) |
+| [Held While Waiting: What LLM Agent Sessions Reserve on Serverless and Agent Runtimes](../papers/2026/arXiv/arxiv_2611.26480.md) | arXiv | — | [代码仓库](https://github.com/MEKHALA/agent-runtime-capacity) |
+| [Replication of Agentic Security Events: Audit and Investigation (ROGUE-AI)](../papers/2026/arXiv/arxiv_2611.26553.md) | arXiv | — | [代码仓库](https://rogue-ai.surge.sh) |
+| [AgentRoboCritic: Understanding the Capability of Frontier Agents on Direct Robot Control](../papers/2026/arXiv/arxiv_2611.26613.md) | arXiv | — | [代码仓库](https://github.com/cxcscmu/AgentRoboCritic) |
+| [PlayCraft: Designing Engaging Games from Agent Play Experience](../papers/2026/arXiv/arxiv_2611.26624.md) | arXiv | — | [代码仓库](https://github.com/xt4d/PlayCraft) |
 
 ---
 

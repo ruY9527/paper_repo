@@ -20,6 +20,13 @@ code_url: "https://arxiv.org/abs/2611.26423 （arXiv 页面未列出代码链接
 paper_url: "https://arxiv.org/abs/2611.26423"
 ---
 
+<!-- BACK-TO-HOME -->
+<div align="left" markdown>
+
+[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
+
+</div>
+
 # Seer：用小模型也能做深度研究，靠的是可复用的决策模型
 
 ## 0. 先说清楚一件事：这篇论文和图像融合的关系
