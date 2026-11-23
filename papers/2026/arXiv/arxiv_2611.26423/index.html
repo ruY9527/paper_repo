@@ -1453,9 +1453,16 @@
 
 
 <!-- BACK-TO-HOME -->
-<div align="left">
-<p><a class="md-button md-button--primary" href="../../../../">← 返回首页 · 最近发布的高价值论文</a></p>
-</div>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<p><a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a></p>
 <h1 id="seer">Seer：用小模型也能做深度研究，靠的是可复用的决策模型<a class="headerlink" href="#seer" title="Permanent link">&para;</a></h1>
 <h2 id="0">0. 先说清楚一件事：这篇论文和图像融合的关系<a class="headerlink" href="#0" title="Permanent link">&para;</a></h2>
 <p>按用户给的侧重方向，这里先做一个必要的澄清。Seer 是一篇<strong>深度研究 Agent</strong>（deep-research agent）论文。它的工具链只有两个：<code>search</code>（返回标题、链接、摘要）和 <code>visit</code>（抓取网页并用共享的 Qwen3.5-397B-A17B 服务做目标相关证据抽取）。全文的实验平台是 GAIA、BrowseComp-200、BrowseComp-ZH、SEAL-0、XBench-DeepSearch，全部是网页检索与问答。<strong>论文没有图像输入、没有图像工具、没有图像融合算子、没有 PSNR/SSIM 或任何感知质量指标。</strong> 用户模板里"第 5 节方法拆解与第 7 节实验"要求覆盖的"动态算子调度 / 退化感知路由 / 自适应提示生成 / 多模态工具链 / 闭环反馈"在这一论文里没有对应实现。</p>

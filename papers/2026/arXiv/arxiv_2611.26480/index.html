@@ -1435,9 +1435,16 @@
   <h1>Held While Waiting: What LLM Agent Sessions Reserve on Serverless and Agent Runtimes</h1>
 
 <!-- BACK-TO-HOME -->
-<div align="left">
-<p><a class="md-button md-button--primary" href="../../../../">← 返回首页 · 最近发布的高价值论文</a></p>
-</div>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<p><a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a></p>
 <h2 id="0">0. 阅读约定：证据分级与一个必须先说清的错配<a class="headerlink" href="#0" title="Permanent link">&para;</a></h2>
 <p>本文严格区分四类信息，正文用短标记标注：<strong>【原文】</strong>论文明确声称，<strong>【文献】</strong>论文引用或公开文档已有的结论，<strong>【推断】</strong>基于论文证据的合理推断，<strong>【猜想】</strong>尚未验证的设想。</p>
 <p>还有一个必须先说清的错配。任务说明要求重点覆盖 Agent 在图像融合中的决策角色、多模态工具链、闭环反馈和融合质量消融。这篇论文里<strong>没有</strong>图像融合算法、没有算子调度器、没有退化感知路由、没有自适应提示生成、没有 PSNR/SSIM 实验，也没有任何视觉数据集。它是一篇系统性能测量论文，研究对象是 agent 会话在 serverless 与 agent runtime 上占用多少环境。把图像融合视角套上来，属于读者带来的应用透镜，不是论文内容。第 5、7 节会在完成论文本身的方法与实验拆解后，给出一段明确标注为【推断】的迁移设计，说明这些融合 agent 组件如果放进这套测量框架会怎样被约束，并指出论文对它们零证据。</p>

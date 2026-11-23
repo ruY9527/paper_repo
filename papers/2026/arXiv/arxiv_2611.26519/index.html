@@ -1212,9 +1212,16 @@
 
 
 <!-- BACK-TO-HOME -->
-<div align="left">
-<p><a class="md-button md-button--primary" href="../../../../">← 返回首页 · 最近发布的高价值论文</a></p>
-</div>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<p><a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a></p>
 <h1 id="ace-brain-07-agent">ACE-Brain-0.7 深度解析：Agent 的判断如何被「执行状态」约束<a class="headerlink" href="#ace-brain-07-agent" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>阅读前的一句校准。本分析的任务说明里有一个预设：「Agent 驱动图像融合」，并点名要覆盖动态算子调度、退化感知路由、自适应提示生成、多模态工具链、端到端闭环融合反馈。读完原文可以确认：这篇论文不做图像融合，它是一个具身任务推理 VLM，没有可调度或路由的图像算子，没有工具调用链，没有融合质量指标或融合消融。论文里的「Agent」是执行任务的机器人或它的高层策略，不是调度融合操作的控制器。因此下文第 5、7 节会把「Agent 在图像融合中的决策角色」这一关注点翻译成这类系统里可对应的东西：Agent 在什么时候、依据什么证据、对哪一种查询做判断，以及这个判断怎样随视觉证据变化。凡是这种翻译性的对应，我都会明确标成推断，不冒充原文声明。若你要找的确实是图像融合论文，这篇选错了。</p>

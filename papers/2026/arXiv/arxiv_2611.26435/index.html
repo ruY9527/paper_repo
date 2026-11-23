@@ -1379,9 +1379,16 @@
   <h1>Aggron: Aggressive Compression of Agentic KV Caches during Head-of-Line Stalls in the Request Queue</h1>
 
 <!-- BACK-TO-HOME -->
-<div align="left">
-<p><a class="md-button md-button--primary" href="../../../../">← 返回首页 · 最近发布的高价值论文</a></p>
-</div>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<p><a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a></p>
 <h2 id="1">1. 论文提出并解决的研究问题是什么，为什么重要<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
 <p><strong>论文明确声称</strong>：本文处理的是在线多租户服务场景下的 Agentic LLM KV  cache 膨胀问题。Agent 一次任务包含几十到几百次模型调用，每次工具输出都追加进上下文。生产 trace 中 90 分位 session 发起超过 100 次模型调用，Codex 达到 241 次，上下文峰值 186K token，Codex 为 235K token。即使使用混合线性注意力或 latent attention，一个 128K token 的 GLM-4.5 请求也占约 40 GB HBM，两个就填满 H100 的 80 GB。</p>
 <p>问题的重要性集中在三个数字上：</p>

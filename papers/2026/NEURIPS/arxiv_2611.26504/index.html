@@ -1531,9 +1531,16 @@
 
 
 <!-- BACK-TO-HOME -->
-<div align="left">
-<p><a class="md-button md-button--primary" href="../../../../">← 返回首页 · 最近发布的高价值论文</a></p>
-</div>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<p><a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a></p>
 <p>先给一句话定位。这篇论文拿到的是 2026 年 NeurIPS 的两个 workshop（NeurReps 和 WiML）的接收，只有 15 页、3 张图，实验只在一个 12×12 的网格世界里做。它的价值不在“刷榜”，而在把一个一直被当成“要学”的东西（successor feature，后继特征）改写成一个“可以算”的东西。下面我会先把这篇论文真正做了什么讲清楚，然后按你要求的 13 个点展开。你给的主题里反复提到“Agent 驱动图像融合”“退化感知路由”“多模态工具链”“端到端闭环反馈”，我必须先说清楚：这篇论文不是图像融合论文，里面没有退化感知路由，也没有多模态融合工具链。我不会凭空编造这些机制。我会在相关章节里，把论文里与“Agent 决策角色”真正对应的部分（固定参考策略与贪婪执行策略的分离、基底的离线/在线构建、图从经验中估计、线性权重 w 的持续更新）讲透，并明确指出哪些是论文明确声称的、哪些是合理推断、哪些在论文里根本不存在。</p>
 <hr />
 <h2 id="1">1. 论文提出并解决的研究问题，以及它为什么重要<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>

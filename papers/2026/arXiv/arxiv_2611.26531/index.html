@@ -1232,9 +1232,16 @@
   <h1>Cost-Aware Agentic Feature Optimization System for Fleet-Scale Ranking Models</h1>
 
 <!-- BACK-TO-HOME -->
-<div align="left">
-<p><a class="md-button md-button--primary" href="../../../../">← 返回首页 · 最近发布的高价值论文</a></p>
-</div>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<p><a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a></p>
 <h2 id="1">1. 论文提出并解决的研究问题是什么？为什么重要？带来哪些价值？<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
 <p>先讲清楚场景。一个大型 Web 平台不会只跑一个排序模型，而是跑一支模型舰队：不同 surface、不同意图、不同任务各有一个模型。它们共享一个上万级别的特征池。每个特征在不同模型里的表现不一样，而且每个特征都要付费。付费分两笔，论文分得很清楚（【论文明确声称】）：</p>
 <ul>
