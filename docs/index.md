@@ -1,12 +1,12 @@
 # PaperFlow 2026 — 顶会顶刊论文精读库
 
 !!! info "年度总览"
-    - 已收录论文：**20** 篇
-    - S 级精读：**13** 篇
-    - A 级速览：**7** 篇
-    - 带开源代码：**5** 篇
-    - 收录网站：**0** 个 → [网站导航](sites/index.md)
-    - 最近更新：2026-11-22
+    - 已收录论文：**43** 篇
+    - S 级精读：**15** 篇
+    - A 级速览：**20** 篇
+    - 带开源代码：**6** 篇
+    - 收录网站：**1** 个 → [网站导航](sites/index.md)
+    - 最近更新：2026-11-23
 
 ## 各顶会/顶刊收录数量
 
@@ -14,22 +14,38 @@
 
 | Venue | 今年 2026 | 去年 2025 | 往期 | 合计 |
 | :--- | ---: | ---: | ---: | ---: |
-| TPAMI | 0 | 0 | 0 | 0 |
-| TIP | 0 | 0 | 0 | 0 |
-| IJCV | 0 | 0 | 0 | 0 |
+| TPAMI | [1](venues/TPAMI-2026.md) | 0 | 0 | [1](venues/TPAMI-2026.md) |
+| TIP | [1](venues/TIP-2026.md) | 0 | 0 | [1](venues/TIP-2026.md) |
+| IJCV | [1](venues/IJCV-2026.md) | 0 | 0 | [1](venues/IJCV-2026.md) |
 | CVPR | 0 | 0 | 0 | 0 |
 | ECCV | 0 | 0 | 0 | 0 |
 | ICCV | 0 | 0 | 0 | 0 |
 | NeurIPS | [1](venues/NeurIPS-2026.md) | 0 | 0 | [1](venues/NeurIPS-2026.md) |
 | ICLR | 0 | 0 | 0 | 0 |
 | AAAI | 0 | 0 | 0 | 0 |
-| ARXIV（其它来源） | [18](venues/ARXIV-2026.md) | 0 | 0 | [18](venues/ARXIV-2026.md) |
+| ACS MEASUREMENT SCIENCE AU（其它来源） | [1](venues/ACS MEASUREMENT SCIENCE AU-2026.md) | 0 | 0 | [1](venues/ACS MEASUREMENT SCIENCE AU-2026.md) |
+| ADVANCED FUNCTIONAL MATERIALS（其它来源） | [1](venues/ADVANCED FUNCTIONAL MATERIALS-2026.md) | 0 | 0 | [1](venues/ADVANCED FUNCTIONAL MATERIALS-2026.md) |
+| AFRICAN JOURNAL OF BIOMEDICAL RESEARCH（其它来源） | [1](venues/AFRICAN JOURNAL OF BIOMEDICAL RESEARCH-2026.md) | 0 | 0 | [1](venues/AFRICAN JOURNAL OF BIOMEDICAL RESEARCH-2026.md) |
+| ARXIV（其它来源） | [19](venues/ARXIV-2026.md) | 0 | 0 | [19](venues/ARXIV-2026.md) |
+| ARXIV (CORNELL UNIVERSITY)（其它来源） | [1](venues/ARXIV (CORNELL UNIVERSITY)-2026.md) | 0 | 0 | [1](venues/ARXIV (CORNELL UNIVERSITY)-2026.md) |
+| BIORXIV (COLD SPRING HARBOR LABORATORY)（其它来源） | [3](venues/BIORXIV (COLD SPRING HARBOR LABORATORY)-2026.md) | 0 | 0 | [3](venues/BIORXIV (COLD SPRING HARBOR LABORATORY)-2026.md) |
+| FRONTIERS IN MEDICINE（其它来源） | [1](venues/FRONTIERS IN MEDICINE-2026.md) | 0 | 0 | [1](venues/FRONTIERS IN MEDICINE-2026.md) |
+| FRONTIERS IN NEUROLOGY（其它来源） | [1](venues/FRONTIERS IN NEUROLOGY-2026.md) | 0 | 0 | [1](venues/FRONTIERS IN NEUROLOGY-2026.md) |
+| FRONTIERS IN PLANT SCIENCE（其它来源） | [1](venues/FRONTIERS IN PLANT SCIENCE-2026.md) | 0 | 0 | [1](venues/FRONTIERS IN PLANT SCIENCE-2026.md) |
+| INTERNATIONAL JOURNAL OF RESEARCH AND INNOVATION IN APPLIED SCIENCE（其它来源） | [1](venues/INTERNATIONAL JOURNAL OF RESEARCH AND INNOVATION IN APPLIED SCIENCE-2026.md) | 0 | 0 | [1](venues/INTERNATIONAL JOURNAL OF RESEARCH AND INNOVATION IN APPLIED SCIENCE-2026.md) |
+| MATERIALS TODAY BIO（其它来源） | [1](venues/MATERIALS TODAY BIO-2026.md) | 0 | 0 | [1](venues/MATERIALS TODAY BIO-2026.md) |
+| NATURE COMMUNICATIONS（其它来源） | [1](venues/NATURE COMMUNICATIONS-2026.md) | 0 | 0 | [1](venues/NATURE COMMUNICATIONS-2026.md) |
+| NPJ DRUG DISCOVERY.（其它来源） | [1](venues/NPJ DRUG DISCOVERY.-2026.md) | 0 | 0 | [1](venues/NPJ DRUG DISCOVERY.-2026.md) |
 | OPENALEX（其它来源） | [1](venues/OPENALEX-2026.md) | 0 | 0 | [1](venues/OPENALEX-2026.md) |
+| RESEARCH SQUARE（其它来源） | [1](venues/RESEARCH SQUARE-2026.md) | 0 | 0 | [1](venues/RESEARCH SQUARE-2026.md) |
+| SCIENTIFIC REPORTS（其它来源） | [3](venues/SCIENTIFIC REPORTS-2026.md) | 0 | 0 | [3](venues/SCIENTIFIC REPORTS-2026.md) |
+| SWARNADWIPA JURNAL KAJIAN SEJARAH SOSIAL BUDAYA DAN PEMBELAJARANNYA（其它来源） | [1](venues/SWARNADWIPA JURNAL KAJIAN SEJARAH SOSIAL BUDAYA DAN PEMBELAJARANNYA-2026.md) | 0 | 0 | [1](venues/SWARNADWIPA JURNAL KAJIAN SEJARAH SOSIAL BUDAYA DAN PEMBELAJARANNYA-2026.md) |
 
 ## 最近发布的高价值论文
 
 | 日期 | Venue | 标题 | Tier | 标签 | TL;DR |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| 2026-09-17 | arXiv | [An Archival Calibration of JWST/MIRI Prism Wide-Field Slitless Spectroscopy: Methodology, Performance, and a Mid-Infrared Spectral Atlas of Galaxies at $z=0-4$ in the GOODS-N/S Fields](papers/2026/arXiv/arxiv_2609.20935.md) | S | `agent与图像领域` · 智能体 | Through the Low Resolution Spectroscopy (LRS) observing mode of JWST/MIRI, the P750L prism disperses… |
 | 2026-11-19 | NeurIPS | [Grid Cells as Spectral Successor Features: A Reusable Basis for Continual Reinforcement Learning](papers/2026/NEURIPS/arxiv_2611.26504.md) | S | `continual-RL` · 持续强化学习 ｜ `successor-representation` · 后继表征 ｜ `successor-features` · 后继特征 ｜ `grid-cells` · 网格细胞 ｜ `laplacian-eigenfunctions` · 拉普拉斯特征函数 ｜ `spectral-methods` · 谱方法 | Continual reinforcement learning requires agents to adapt when the task changes while reusing what t… |
 | 2026-11-19 | arXiv | [Seer: Guiding Small Deep-Research Agents with Shared Decision Models](papers/2026/arXiv/arxiv_2611.26423.md) | S | `deep-research-agent` · 智能体 ｜ `inference-time-guidance` ｜ `model-based-lookahead` ｜ `world-model` · 强化学习 ｜ `value-estimator` ｜ `puct` | Deep-research agents repeatedly decide what to search, read, and verify, often using large cloud-hos… |
 | 2026-11-19 | arXiv | [MemFolder: Structure-Guided Memory Folding for Efficient Agent Memory Management](papers/2026/arXiv/arxiv_2611.26427.md) [💻](https://github.com/xuyang-liu16/MemFolder) | S | `agent-memory` · 智能体 / 记忆 ｜ `memory-compression` · 记忆 / 压缩 ｜ `retrieval-augmented-generation` · 检索 ｜ `long-term-agents` · 智能体 ｜ `DPC-clustering` ｜ `temporal-chaining` | Long-term agents accumulate large external memory stores as interactions unfold, increasing the cost… |
@@ -69,6 +85,7 @@
 
 ## 按研究方向浏览
 
+- [agent与图像领域](topics/agent与图像领域.md)（20 篇）
 - [agent](topics/agent.md)（20 篇）
 
 ---

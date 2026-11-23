@@ -1,9 +1,23 @@
 # 🌐 科研与工具网站导航
 
 !!! info "导航总览"
-    - 公开收录：**0** 个网站
-    - 覆盖分类：**0** 个
-    - 最后同步：2026-11-22
+    - 公开收录：**1** 个网站
+    - 覆盖分类：**1** 个
+    - 最后同步：2026-11-23
+
+## 🤖 AI 与大模型
+
+<div class="grid cards" markdown>
+
+-   **[m0rtzz.github.io](https://m0rtzz.github.io/paper-notes){ target="_blank" }**
+
+    ---
+
+    m0rtzz.github.io
+
+    `AI 与大模型`
+
+</div>
 
 ---
 

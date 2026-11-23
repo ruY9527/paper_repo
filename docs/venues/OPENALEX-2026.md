@@ -4,7 +4,7 @@
 
 | 日期 | 标题 | Tier | Code | 状态 | TL;DR |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 2026-12-31 | [A Closer Look at the Agent Advantage Effect: The Impact of Biting Orientations](https://osf.io/nmdve) | S | — | 🔒 需登录/待补传 | A Closer Look at the Agent Advantage Effect: The Impact of Biting Orientations |
+| 2026-12-31 | [A Closer Look at the Agent Advantage Effect: The Impact of Biting Orientations](https://osf.io/nmdve) | B | — | 🔒 需登录/待补传 | A Closer Look at the Agent Advantage Effect: The Impact of Biting Orientations |
 
 ---
 

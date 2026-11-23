@@ -1,16 +1,16 @@
 # ARXIV 2026 年度总表
 
-共收录 **18** 篇论文。
+共收录 **19** 篇论文。
 
 | 日期 | 标题 | Tier | Code | 状态 | TL;DR |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 2026-11-19 | [FLUID: Flexible, Evidence-Grounded Situated Task Guidance](http://arxiv.org/abs/2611.26491v1) | A | — | — | Real-time task guidance is inherently flexible: when an agent guides a user through a task, multiple… |
-| 2026-11-19 | [AutoMaster: Autonomous Post-Training by Making the Same Model a Better Teacher](http://arxiv.org/abs/2611.26510v1) | A | — | — | Task success alone does not specify which behaviors post-training should reinforce |
-| 2026-11-19 | [From Seed to BLOOM: Autonomously Growing a Better Out-of-Order Core](http://arxiv.org/abs/2611.26517v1) | A | — | — | Improving microprocessor performance while meeting ASIC implementation constraints like area and fre… |
-| 2026-11-19 | [Thermal-Guided Ensemble Reinforcement Learning for Regime-Adaptive Short-Term GPU Power Forecasting in AI Data Centers](http://arxiv.org/abs/2611.26527v1) | A | — | — | AI data centers (AIDCs) introduce bursty and regime-dependent load patterns, posing significant chal… |
-| 2026-11-19 | [Coda-DaVinci: Reimagining Video Generation with Code2Video](http://arxiv.org/abs/2611.26595v1) | A | — | — | Code2Video uses agent-authored 3D proxies to guide video generation, enabling explicit control over … |
-| 2026-11-19 | [SoK: Assessing the Evolution of LLM Capability in Software Vulnerability Research](http://arxiv.org/abs/2611.26601v1) | A | — | — | LLM-based agents are becoming increasingly capable at discovering, validating and patching vulnerabi… |
-| 2026-11-19 | [TideCache: Efficient Hybrid LLM Serving with Transparent Cache Management and Layer-Wise Streaming](http://arxiv.org/abs/2611.26619v1) | A | — | — | Hybrid architectures have become mainstream among open-weight language models |
+| 2026-11-19 | [AutoMaster: Autonomous Post-Training by Making the Same Model a Better Teacher](http://arxiv.org/abs/2611.26510v1) | A | [💻](https://github.com/RUCAIBox/AutoMaster) | — | Task success alone does not specify which behaviors post-training should reinforce |
+| 2026-11-19 | [From Seed to BLOOM: Autonomously Growing a Better Out-of-Order Core](http://arxiv.org/abs/2611.26517v1) | B | — | — | Improving microprocessor performance while meeting ASIC implementation constraints like area and fre… |
+| 2026-11-19 | [Thermal-Guided Ensemble Reinforcement Learning for Regime-Adaptive Short-Term GPU Power Forecasting in AI Data Centers](http://arxiv.org/abs/2611.26527v1) | B | — | — | AI data centers (AIDCs) introduce bursty and regime-dependent load patterns, posing significant chal… |
+| 2026-11-19 | [Coda-DaVinci: Reimagining Video Generation with Code2Video](http://arxiv.org/abs/2611.26595v1) | B | — | — | Code2Video uses agent-authored 3D proxies to guide video generation, enabling explicit control over … |
+| 2026-11-19 | [SoK: Assessing the Evolution of LLM Capability in Software Vulnerability Research](http://arxiv.org/abs/2611.26601v1) | B | — | — | LLM-based agents are becoming increasingly capable at discovering, validating and patching vulnerabi… |
+| 2026-11-19 | [TideCache: Efficient Hybrid LLM Serving with Transparent Cache Management and Layer-Wise Streaming](http://arxiv.org/abs/2611.26619v1) | B | — | — | Hybrid architectures have become mainstream among open-weight language models |
 | 2026-11-19 | [Seer: Guiding Small Deep-Research Agents with Shared Decision Models](../papers/2026/arXiv/arxiv_2611.26423.md) | S | — | — | Deep-research agents repeatedly decide what to search, read, and verify, often using large cloud-hos… |
 | 2026-11-19 | [MemFolder: Structure-Guided Memory Folding for Efficient Agent Memory Management](../papers/2026/arXiv/arxiv_2611.26427.md) | S | [💻](https://github.com/xuyang-liu16/MemFolder) | — | Long-term agents accumulate large external memory stores as interactions unfold, increasing the cost… |
 | 2026-11-19 | [Aggron: Aggressive Compression of Agentic KV Caches during Head-of-Line Stalls in the Request Queue](../papers/2026/arXiv/arxiv_2611.26435.md) | S | — | — | LLM agents run long, multi-turn programs whose contexts grow at every step, and serving them is limi… |
@@ -22,6 +22,7 @@
 | 2026-11-19 | [Replication of Agentic Security Events: Audit and Investigation (ROGUE-AI)](../papers/2026/arXiv/arxiv_2611.26553.md) | S | [💻](https://rogue-ai.surge.sh) | — | Agents based on large language models (LLMs) can now delete files and send payments on behalf of the… |
 | 2026-11-19 | [AgentRoboCritic: Understanding the Capability of Frontier Agents on Direct Robot Control](../papers/2026/arXiv/arxiv_2611.26613.md) | S | [💻](https://github.com/cxcscmu/AgentRoboCritic) | — | Frontier multimodal language agents such as GPT-6 Astra have demonstrated strong capabilities in con… |
 | 2026-11-19 | [PlayCraft: Designing Engaging Games from Agent Play Experience](../papers/2026/arXiv/arxiv_2611.26624.md) | S | [💻](https://github.com/xt4d/PlayCraft) | — | Recent AI agents can generate playable games, but these games are not necessarily engaging |
+| 2026-09-17 | [An Archival Calibration of JWST/MIRI Prism Wide-Field Slitless Spectroscopy: Methodology, Performance, and a Mid-Infrared Spectral Atlas of Galaxies at $z=0-4$ in the GOODS-N/S Fields](../papers/2026/arXiv/arxiv_2609.20935.md) | S | — | — | Through the Low Resolution Spectroscopy (LRS) observing mode of JWST/MIRI, the P750L prism disperses… |
 
 ---
 

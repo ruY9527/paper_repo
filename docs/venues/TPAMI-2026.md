@@ -1,11 +1,10 @@
 # TPAMI 2026 年度总表
 
-共收录 **0** 篇论文。
+共收录 **1** 篇论文。
 
-!!! info "2026 年暂无收录"
-    本 Venue 在 2026 年暂无收录论文。
-    当前论文多为 arXiv 预印本，可到首页「各顶会/顶刊收录数量」的
-    「其它来源」查看；后续按 Venue 归类后会自动出现在这里。
+| 日期 | 标题 | Tier | Code | 状态 | TL;DR |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-20 | [Retrieval-Augmented Task-Aware Transformer for Video Procedure Learning](https://doi.org/10.1109/tpami.2026.3755542) | A | — | — | Procedure learning aims to jointly recognize and localize key steps from instructional videos given … |
 
 ---
 
