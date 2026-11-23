@@ -18,12 +18,19 @@ code_url: https://github.com/xuyang-liu16/MemFolder
 paper_url: https://arxiv.org/abs/2611.26427
 ---
 
+
 <!-- BACK-TO-HOME -->
-<div align="left" markdown>
+<style>
+.pf-back-home{position:fixed;left:18px;top:76px;z-index:60;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;background:rgba(99,102,241,.94);color:#fff;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s,background .15s;backdrop-filter:blur(4px)}
+.pf-back-home:hover{background:rgba(79,70,229,1);color:#fff;text-decoration:none;transform:translateX(-2px)}
+.pf-back-home .pf-arrow{font-size:15px;line-height:1}
+@media screen and (max-width:1220px){.pf-back-home{left:auto;right:18px;top:12px}}
+@media screen and (max-width:760px){.pf-back-home{position:static;display:inline-flex;margin:0 0 14px;box-shadow:none}}
+</style>
+<a class="pf-back-home" href="../../../index.md" title="返回首页 · 最近发布的高价值论文">
+  <span class="pf-arrow">←</span><span>返回首页</span>
+</a>
 
-[← 返回首页 · 最近发布的高价值论文](../../../index.md){ .md-button .md-button--primary }
-
-</div>
 
 # MemFolder 深度解析：Agent 如何同时折叠记录数与上下文长度
 
