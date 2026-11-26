@@ -1,0 +1,84 @@
+[
+  {
+    "id": "tier_s_default",
+    "name": "通用 S 级深度精读（13 节）",
+    "tier": "S",
+    "priority": 0,
+    "match_topics": [],
+    "match_keywords": [],
+    "description": "13 节深度分析（问题/背景/思考路径/intuition/方法/数学/实验/takeaways/假设/复现/反例/后续/idea），Karpathy+Kaiming 风格",
+    "file": "tier_s_default.md",
+    "is_builtin": true
+  },
+  {
+    "id": "tier_a_default",
+    "name": "通用 A 级速览默认",
+    "tier": "A",
+    "priority": 0,
+    "match_topics": [],
+    "match_keywords": [],
+    "description": "通用 A 级速览模板",
+    "file": "tier_a_default.md",
+    "is_builtin": true
+  },
+  {
+    "id": "topic_agent",
+    "name": "Agent 方向专属精读",
+    "tier": "S",
+    "priority": 100,
+    "match_topics": [
+      "Agent"
+    ],
+    "match_keywords": [
+      "agent",
+      "autonomous agent",
+      "agentic",
+      "llm agent",
+      "tool use"
+    ],
+    "description": "侧重 Planning/Reasoning、Tool Use、Memory、Multi-Agent 与评测基准",
+    "file": "topic_agent.md",
+    "is_builtin": true
+  },
+  {
+    "id": "topic_hsi_msi_fusion",
+    "name": "HSI-MSI 图像融合专属精读",
+    "tier": "S",
+    "priority": 100,
+    "match_topics": [
+      "HSI-MSI 图像融合",
+      "hsi-msi-fusion",
+      "HSI-MSI图像融合"
+    ],
+    "match_keywords": [
+      "hyperspectral",
+      "multispectral",
+      "hsi-msi",
+      "pansharpening",
+      "image fusion",
+      "光谱"
+    ],
+    "description": "侧重物理退化模型、光谱-空间交互与 PSNR/SAM/ERGAS 指标对比",
+    "file": "topic_hsi_msi_fusion.md",
+    "is_builtin": true
+  },
+  {
+    "id": "topic_agent_image_fusion",
+    "name": "Agent + 图像融合交叉专属精读",
+    "tier": "S",
+    "priority": 110,
+    "match_topics": [
+      "Agent + 图像融合",
+      "agent-image-fusion"
+    ],
+    "match_keywords": [
+      "agent",
+      "image fusion",
+      "fusion",
+      "adaptive"
+    ],
+    "description": "侧重 Agent 决策角色、多模态工具链与端到端闭环反馈",
+    "file": "topic_agent_image_fusion.md",
+    "is_builtin": true
+  }
+]

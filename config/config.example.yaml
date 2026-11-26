@@ -1,0 +1,223 @@
+project:
+  target_year: 2026
+  workspace_dir: "./workspace"
+  paper_repo_dir: "./paper_repo"
+  timezone: "Asia/Shanghai"
+
+# 9 大目标顶会与顶刊配置
+venues:
+  journals:
+    TPAMI:
+      full_name: "IEEE Transactions on Pattern Analysis and Machine Intelligence"
+      issns: ["0162-8828", "1939-3539"]
+      arxiv_patterns: ["\\bTPAMI\\b", "IEEE\\s+T-?PAMI", "Trans\\.?\\s+Pattern\\s+Anal"]
+    TIP:
+      full_name: "IEEE Transactions on Image Processing"
+      issns: ["1057-7149", "1941-0042"]
+      arxiv_patterns: ["\\bIEEE\\s+TIP\\b", "\\bT-?IP\\b", "Trans\\.?\\s+Image\\s+Process"]
+    IJCV:
+      full_name: "International Journal of Computer Vision"
+      issns: ["0920-5691", "1573-1405"]
+      arxiv_patterns: ["\\bIJCV\\b", "Int\\.?\\s+J\\.?\\s+Comput\\.?\\s+Vis"]
+
+  conferences:
+    CVPR:
+      full_name: "IEEE/CVF Conference on Computer Vision and Pattern Recognition"
+      arxiv_patterns: ["CVPR\\s*['’]?2026", "CVPR\\s*26\\b"]
+      openalex_source_ids: []
+    ECCV:
+      full_name: "European Conference on Computer Vision"
+      arxiv_patterns: ["ECCV\\s*['’]?2026", "ECCV\\s*26\\b"]
+    ICCV:
+      full_name: "IEEE/CVF International Conference on Computer Vision"
+      arxiv_patterns: ["ICCV\\s*['’]?202[56]", "ICCV\\s*2[56]\\b"]
+    NeurIPS:
+      full_name: "Advances in Neural Information Processing Systems"
+      arxiv_patterns: ["NeurIPS\\s*['’]?2026", "NIPS\\s*2026"]
+      openreview_venue_id: "NeurIPS.cc/2026/Conference"
+    ICLR:
+      full_name: "International Conference on Learning Representations"
+      arxiv_patterns: ["ICLR\\s*['’]?2026", "ICLR\\s*26\\b"]
+      openreview_venue_id: "ICLR.cc/2026/Conference"
+    AAAI:
+      full_name: "AAAI Conference on Artificial Intelligence"
+      arxiv_patterns: ["AAAI\\s*['’]?2026", "AAAI\\s*26\\b"]
+
+# 数据源配置与限流
+sources:
+  arxiv:
+    enabled: true
+    categories: ["cs.CV", "cs.LG", "cs.AI", "cs.CL", "cs.RO"]
+    rate_limit_seconds: 3.1
+    max_results_per_slice: 500
+  openalex:
+    enabled: true
+    mailto: "your_email@example.com"
+    rate_limit_seconds: 0.5
+  openreview:
+    enabled: true
+    rate_limit_seconds: 1.0
+
+# 补录策略
+backfill:
+  default_lookback_days: 3
+  max_slice_days: 5
+  max_auto_catchup_days: 60
+
+# 个人科研兴趣画像（用于 S/A/B 自动分级）
+interest_profile:
+  high_priority_keywords:
+    - "action recognition"
+    - "video understanding"
+    - "temporal action"
+    - "multimodal"
+    - "vision-language"
+  medium_priority_keywords:
+    - "diffusion"
+    - "3d gaussian"
+    - "world model"
+    - "self-supervised"
+    - "agent"
+  exclude_keywords:
+    - "medical segmentation"
+    - "retinal"
+    - "hyperspectral"
+  tracked_authors:
+    - "Kaiming He"
+    - "Ross Girshick"
+  tracked_affiliations:
+    - "Google DeepMind"
+    - "FAIR"
+    - "Meta AI"
+  bonuses:
+    has_code: 15
+    oral_or_spotlight: 20
+  thresholds:
+    tier_s: 50
+    tier_a: 25
+
+# 下载、抽图与自动清理策略
+storage:
+  max_pdf_size_mb: 50
+  extract_figures: true
+  max_figures_per_paper: 2
+  figure_max_width_px: 1200
+  figure_webp_quality: 80
+  auto_clean_after_publish: true
+  min_valid_md_chars: 300
+
+# 博客发布配置
+publish:
+  auto_git_commit: true
+  auto_git_push: false
+  commit_message_template: "docs: publish {count} papers ({date})"
+  blog_site_url: "https://ruY9527.github.io/paper_repo/"
+  git_remote_name: "origin"
+  require_mkdocs_strict_build: true
+  preview_port: 8001
+
+# 通知配置（可选）
+notifications:
+  windows_toast: true
+  webhook_type: "none"
+  webhook_url_env: "PAPERFLOW_WEBHOOK_URL"
+
+# Phase 10：研究方向精准检索与近两年时效优先
+topic_search:
+  enabled: true
+  recency_policy:
+    primary_year: 2026
+    allow_fallback_prev_year: true
+    primary_year_bonus: 25.0
+    strict_min_year_offset: 1
+  default_limit_per_topic: 20
+  auto_promote_top_n_to_s: 3
+  synonym_dict:
+    "agent": ["agent", "LLM agent", "multimodal agent", "autonomous agent", "agentic"]
+    "图像融合": ["image fusion", "multi-modal image fusion", "infrared and visible image fusion", "multi-focus image fusion"]
+    "hsi-msi": ["hyperspectral and multispectral", "HSI-MSI", "HSI and MSI", "hyperspectral super-resolution", "multispectral fusion"]
+    "hsi-msi图像融合": ["HSI-MSI fusion", "hyperspectral and multispectral image fusion", "HSI and MSI fusion", "hyperspectral image super-resolution"]
+    "超分": ["super-resolution"]
+    "遥感": ["remote sensing"]
+    "多模态": ["multimodal", "vision-language"]
+  subscriptions:
+    - name: "Agent"
+      slug: "agent"
+      query: "agent"
+      enabled: true
+      limit: 20
+      only_primary_year: false
+      top_venues_only: false
+    - name: "Agent + 图像融合"
+      slug: "agent-image-fusion"
+      query: "agent+图像融合"
+      enabled: true
+      limit: 20
+      only_primary_year: false
+      top_venues_only: false
+    - name: "HSI-MSI 图像融合"
+      slug: "hsi-msi-fusion"
+      query: "HSI-MSI图像融合"
+      enabled: true
+      limit: 20
+      only_primary_year: false
+      top_venues_only: false
+
+# Phase 11：AI 论文自动解析引擎
+analyzer:
+  default_backend: "claude_cli"
+  max_input_chars: 60000
+  max_retries: 2
+  timeout_seconds: 240
+  cooldown_seconds: 3.0
+  auto_validate_after_analysis: true
+  claude_cli:
+    enabled: true
+    executable: "claude"
+    args: ["-p", "--output-format", "text"]
+    model: ""
+    extra_env: {}
+  harness_web:
+    enabled: true
+    web_url: "http://127.0.0.1:3080"
+    auto_watch_staging: true
+  openai_api:
+    enabled: false
+    base_url: "http://127.0.0.1:11434/v1"
+    api_key_env: "PAPERFLOW_LLM_API_KEY"
+    model: "kimi-k3"
+
+# Phase 13：受限出版商过滤与手动补传
+download_policy:
+  enable_paywall_filter: true
+  auto_try_arxiv_rescue: true
+  auto_classify_html_403_as_paywall: true
+  manual_inbox_dir: "./workspace/inbox_pdfs"
+  paywall_domains:
+    - domain: "ieeexplore.ieee.org"
+      publisher: "IEEE Xplore"
+      note: "TPAMI / TIP / TGRS 等需机构账号或校园网登录"
+    - domain: "link.springer.com"
+      publisher: "Springer"
+      note: "IJCV 等需机构登录"
+    - domain: "sciencedirect.com"
+      publisher: "Elsevier"
+      note: "Information Fusion / Pattern Recognition 等"
+    - domain: "dl.acm.org"
+      publisher: "ACM DL"
+      note: "ACM 期刊与会议"
+    - domain: "onlinelibrary.wiley.com"
+      publisher: "Wiley"
+      note: "Wiley 期刊"
+    - domain: "tandfonline.com"
+      publisher: "Taylor & Francis"
+      note: "遥感/工程类期刊"
+
+# Phase 14：网站收录中心与博客导航页
+sites:
+  enabled: true
+  blog_layout: "cards"
+  hide_dead_links_in_blog: false
+  fetch_timeout_seconds: 10.0
+  health_check_timeout_seconds: 8.0
+  health_check_concurrency: 5

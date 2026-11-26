@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PaperFlow Studio — 本地控制台</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script defer src="https://unpkg.com/alpinejs@3.14.9/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+</head>
+<body x-data="studio()" x-init="init()" class="min-h-screen">
+<div class="layout">
+  <!-- 旧进程/旧代码检测横幅 -->
+  <template x-if="codeStale">
+    <div class="code-stale-banner">
+      <span>⚠️ 检测到代码已更新，但当前 Web 服务仍在运行旧版本（进程 PID <b x-text="codeStaleInfo?.pid"></b>）。功能可能报错或不一致。</span>
+      <span class="muted small">请关闭旧窗口后重新运行 <code>python -m paperflow ui --open</code>，再刷新本页。</span>
+      <button class="btn btn-sm" @click="sessionStorage.setItem('paperflow_code_fp',codeFp);codeStale=false">我已重启，忽略</button>
+    </div>
+  </template>
+  <!-- 左侧导航 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">PF</div>
+      <div><div class="brand-title">PaperFlow</div><div class="brand-sub">Studio 2026</div></div>
+    </div>
+    <nav>
+      <template x-for="item in navItems" :key="item.id">
+        <button class="nav-btn" :class="{active: view===item.id}" @click="switchView(item.id)">
+          <span x-text="item.icon"></span><span x-text="item.label"></span>
+          <span class="nav-badge" x-show="item.id==='git' && gitStatus.added+gitStatus.modified+gitStatus.deleted>0"
+                x-text="gitStatus.added+gitStatus.modified+gitStatus.deleted"></span>
+          <span class="nav-badge nav-badge-blue" x-show="item.id==='analyzer' && analyzerStatus.queue_total>0"
+                x-text="analyzerStatus.queue_total"></span>
+        </button>
+      </template>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="status-dot" :class="activeTask && (activeTask.status==='RUNNING') ? 'busy':''"></div>
+      <span x-text="activeTask ? activeTask.command : '系统空闲'"></span>
+    </div>
+  </aside>
+
+  <!-- 主内容 -->
+  <main class="main">
+    <header class="topbar">
+      <h1 x-text="currentTitle()"></h1>
+      <div class="topbar-actions">
+        <span class="muted" x-text="'更新于 ' + (summary.updated_at || '—')"></span>
+        <button class="btn btn-primary" @click="refreshAll()">刷新</button>
+      </div>
+    </header>
+
+    <!-- ========== 页面1：总览 ========== -->
+    <section x-show="view==='dashboard'" class="view">
+      <div class="kpi-grid">
+        <template x-for="k in kpiCards()" :key="k.label">
+          <div class="kpi-card"><div class="kpi-label" x-text="k.label"></div>
+            <div class="kpi-value" x-text="k.value"></div>
+            <div class="kpi-hint" x-text="k.hint"></div></div>
+        </template>
+      </div>
+      <div class="chart-row">
+        <div class="panel"><h3>顶会/顶刊收录分布</h3><div class="chart-box"><canvas id="venueChart"></canvas></div></div>
+        <div class="panel"><h3>近 30 天入库趋势</h3><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+      </div>
+      <div class="panel">
+        <h3>水位线健康</h3>
+        <table class="tbl"><thead><tr><th>数据源</th><th>Venue</th><th>最后成功</th><th>状态</th><th>落后天数</th></tr></thead>
+        <tbody><template x-for="w in summary.watermarks" :key="w.source+w.venue">
+          <tr><td x-text="w.source"></td><td x-text="w.venue"></td><td x-text="w.last_success_date"></td>
+          <td><span class="badge" :class="w.healthy?'ok':'warn'" x-text="w.last_status"></span></td>
+          <td x-text="w.lag_days"></td></tr>
+        </template></tbody></table>
+      </div>
+      <div class="panel quick-actions">
+        <h3>快捷操作</h3>
+        <button class="btn btn-primary" @click="startTask('fetch', {})">一键拉取并导出队列</button>
+        <button class="btn" @click="startTask('export-queue', {})">导出分析队列</button>
+        <button class="btn" @click="startTask('publish', {clean:true})">一键发布并清理</button>
+        <a class="btn" href="/site/" target="_blank">本地博客预览</a>
+      </div>
+      <div class="panel">
+        <h3>单篇论文插队</h3>
+        <div class="inline-form">
+          <input type="text" x-model="addUrl" placeholder="粘贴 arXiv 链接或 DOI">
+          <input type="text" x-model="addVenue" placeholder="Venue（可选，如 CVPR）" style="width:180px">
+          <button class="btn btn-primary" @click="addPaper()">插队精读</button>
+        </div>
+        <p class="muted" x-text="addMsg"></p>
+      </div>
+    </section>
+
+    <!-- ========== 页面2：任务中心 ========== -->
+    <section x-show="view==='tasks'" class="view">
+      <template x-if="activeTask">
+        <div class="panel">
+          <h3>当前任务进度 <span class="badge" x-text="activeTask.status"></span></h3>
+          <div class="progress"><div class="progress-bar" :style="'width:'+(activeTask.percent||0)+'%'"></div></div>
+          <p x-text="(activeTask.stage||'') + ' — ' + (activeTask.message||'') + ' (' + (activeTask.percent||0) + '%)'"></p>
+          <button class="btn btn-danger" @click="cancelTask(activeTask.task_id)">停止任务</button>
+        </div>
+      </template>
+      <div class="panel">
+        <h3>实时日志</h3>
+        <div class="terminal">
+          <template x-for="(line,i) in liveLogs" :key="i">
+            <div :class="'log-'+line.level"><span x-text="fmtLogTime(line.timestamp)+' '"></span><span x-text="line.message"></span></div>
+          </template>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="inline-form" style="justify-content:space-between">
+          <h3 style="margin:0">🗓️ 手动补录中心</h3>
+          <button class="link" @click="backfillExpanded=!backfillExpanded" x-text="backfillExpanded?'收起面板 ▲':'展开详细选项 ▼'"></button>
+        </div>
+
+        <!-- 水位线健康提示：集中在此处，不再全局弹条 -->
+        <template x-if="summary.needs_catchup">
+          <div class="catchup-notice">
+            <span class="catchup-icon">⚠️</span>
+            <div class="catchup-text">
+              <b>检测到数据源水位线落后</b>
+              <div class="muted small" x-text="watermarkLagText()"></div>
+            </div>
+            <button class="btn btn-sm btn-primary" @click="applyPreset('sinceWatermark')">选用「自上次拉取」区间</button>
+            <button class="btn btn-sm" @click="startTask('fetch', {})">一键自动补录</button>
+          </div>
+        </template>
+        <template x-if="!summary.needs_catchup && summary.watermarks && summary.watermarks.length">
+          <div class="catchup-ok">✅ 各数据源水位线均已同步至最新，无需补录。</div>
+        </template>
+
+        <!-- 补录模式切换：按日期 / 按方向关键词 -->
+        <div class="inline-form wrap" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--border)">
+          <span class="muted">补录方式：</span>
+          <button class="btn btn-sm" :class="backfillMode==='date'?'btn-primary':''" @click="backfillMode='date'">📅 按日期区间</button>
+          <button class="btn btn-sm" :class="backfillMode==='query'?'btn-primary':''" @click="backfillMode='query';checkQueryHistory()">🎯 按方向 / 关键词</button>
+          <span class="muted small">两种方式共用 UID 去重，重复补录只会补充新论文</span>
+        </div>
+
+        <!-- 方向 / 关键词补录面板 -->
+        <template x-if="backfillMode==='query'">
+          <div class="query-backfill-panel">
+            <div class="inline-form wrap">
+              <label>研究方向 / 关键词
+                <input type="text" x-model="queryBackfill.query" @input.debounce.500ms="checkQueryHistory()"
+                       @keyup.enter="startQueryBackfill()" placeholder="如：agent、HSI-MSI图像融合、图像融合" style="min-width:320px">
+              </label>
+              <label>数量
+                <select x-model.number="queryBackfill.limit"><option :value="10">10</option><option :value="20">20</option><option :value="50">50</option></select>
+              </label>
+            </div>
+            <div class="inline-form wrap" style="margin-top:10px">
+              <label class="check-label"><input type="checkbox" x-model="queryBackfill.onlyPrimaryYear"> 仅看优先年份</label>
+              <label class="check-label"><input type="checkbox" x-model="queryBackfill.topVenuesOnly"> 仅顶会顶刊</label>
+              <label class="check-label"><input type="checkbox" x-model="queryBackfill.autoDownload"> 自动下载 S 级 PDF</label>
+              <button class="btn btn-primary" @click="startQueryBackfill()" :disabled="!queryBackfill.query.trim()">🎯 按方向补录</button>
+            </div>
+            <div class="query-history-hint" x-show="queryHistoryMsg" x-text="queryHistoryMsg"></div>
+            <p class="muted small" style="margin:8px 0 0">检索策略：优先年份填满 → 不足用上一年补齐 → 更早硬过滤。已入库论文按 UID 自动跳过，不会重复。</p>
+          </div>
+        </template>
+
+        <!-- 日期补录面板 -->
+        <template x-if="backfillMode==='date'">
+        <!-- 快捷日期预设：一键选中常用区间 -->
+        <div class="preset-row">
+          <span class="muted">快捷区间：</span>
+          <template x-for="p in backfillPresets" :key="p.key">
+            <button class="btn btn-sm" :class="backfill.preset===p.key?'btn-primary':''"
+                    @click="applyPreset(p.key)" x-text="p.label"></button>
+          </template>
+        </div>
+
+        <div class="inline-form wrap" style="margin-top:10px">
+          <label>起始日期 <input type="date" x-model="backfill.from" @change="backfill.preset='custom'"></label>
+          <label>结束日期 <input type="date" x-model="backfill.to" @change="backfill.preset='custom'"></label>
+          <span class="date-summary" x-text="backfillRangeText()"></span>
+        </div>
+
+        <template x-if="backfillExpanded">
+          <div class="backfill-advanced">
+            <div class="filter-group">
+              <div class="muted">目标 Venue（不选 = 全部 9 个）</div>
+              <div class="tag-picker">
+                <template x-for="v in venues" :key="v">
+                  <button class="tag" :class="backfill.venueSet.includes(v)?'selected':''"
+                          @click="toggleBackfillVenue(v)" x-text="v"></button>
+                </template>
+                <button class="link" @click="backfill.venueSet=[...venues]">全选</button>
+                <button class="link" @click="backfill.venueSet=venues.filter(v=>['TPAMI','TIP','IJCV'].includes(v))">仅顶刊</button>
+                <button class="link" @click="backfill.venueSet=venues.filter(v=>!['TPAMI','TIP','IJCV'].includes(v))">仅顶会</button>
+                <button class="link" @click="backfill.venueSet=[]">清空</button>
+              </div>
+            </div>
+            <div class="filter-group">
+              <div class="muted">数据源（不选 = 全部已启用源）</div>
+              <div class="tag-picker">
+                <template x-for="s in ['arxiv','openalex','openreview']" :key="s">
+                  <button class="tag" :class="backfill.sourceSet.includes(s)?'selected':''"
+                          @click="toggleBackfillSource(s)" x-text="s"></button>
+                </template>
+                <button class="link" @click="backfill.sourceSet=['arxiv','openalex','openreview']">全选</button>
+                <button class="link" @click="backfill.sourceSet=[]">清空</button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <div class="inline-form" style="margin-top:12px">
+          <label class="check-label"><input type="checkbox" x-model="backfill.dryRun"> Dry-Run（仅试跑，不写库）</label>
+          <button class="btn btn-primary" @click="startBackfill()" :disabled="!backfillValid()">启动补录</button>
+          <span class="muted" x-text="backfillHint()"></span>
+        </div>
+        </template>
+      </div>
+      <div class="panel">
+        <div class="inline-form" style="justify-content:space-between">
+          <h3 style="margin:0">历史操作记录</h3>
+          <div class="inline-form">
+            <span class="muted small" x-text="'共 '+historyTotal+' 条 · 第 '+historyPage()+' / '+historyPages()+' 页'"></span>
+            <button class="btn btn-xs" @click="clearHistory(30)" title="删除30条以前的历史">🧹 保留最近30</button>
+            <button class="btn btn-xs btn-danger" @click="clearHistory(0)" title="删除全部历史记录">🗑 清空</button>
+          </div>
+        </div>
+        <table class="tbl"><thead><tr><th>命令</th><th>开始</th><th>新增</th><th>S/A</th><th>状态</th><th>日志</th><th>操作</th></tr></thead>
+        <tbody><template x-for="h in history" :key="h.id">
+          <tr><td x-text="h.command"></td><td x-text="h.started_at"></td>
+          <td x-text="h.new_count"></td><td x-text="h.tier_s_count+' / '+h.tier_a_count"></td>
+          <td x-text="h.status"></td>
+          <td><button class="link" @click="viewLog(h.id)">查看</button></td>
+          <td><button class="btn btn-xs btn-danger" @click="deleteHistory(h.id)" title="删除此记录及日志">删除</button></td></tr>
+        </template></tbody></table>
+        <div class="pager">
+          <button class="btn btn-sm" @click="historyPageBack()" :disabled="historyOffset===0">← 上一页</button>
+          <span x-text="'第 '+historyPage()+' / '+historyPages()+' 页'"></span>
+          <button class="btn btn-sm" @click="historyPageNext()" :disabled="historyOffset+historyLimit>=historyTotal">下一页 →</button>
+          <select class="page-size" x-model.number="historyLimit" @change="historyOffset=0;loadHistory()" title="每页条数">
+            <option :value="20">20 / 页</option><option :value="30">30 / 页</option><option :value="50">50 / 页</option>
+          </select>
+        </div>
+        <pre class="log-view" x-show="logContent" x-text="logContent"></pre>
+      </div>
+    </section>
+
+    <!-- ========== 页面3：论文账本 ========== -->
+    <section x-show="view==='papers'" class="view">
+      <!-- 筛选面板 -->
+      <div class="panel filter-panel">
+        <div class="filter-panel-head">
+          <h3 style="margin:0">🔍 筛选论文</h3>
+          <span class="muted" x-text="'匹配 '+papers.total+' 篇'"></span>
+        </div>
+        <div class="filter-grid">
+          <div class="filter-field search-field">
+            <label>关键词搜索</label>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" x-model="paperFilter.q" placeholder="标题 / 作者 / 摘要 / UID，回车搜索"
+                     @keyup.enter="applyPaperFilter()">
+              <button class="search-clear" x-show="paperFilter.q" @click="paperFilter.q='';applyPaperFilter()" title="清除">×</button>
+            </div>
+          </div>
+          <div class="filter-field">
+            <label>Venue</label>
+            <select x-model="paperFilter.venue" @change="applyPaperFilter()">
+              <option value="">全部 Venue</option>
+              <template x-for="v in venues" :key="v"><option :value="v" x-text="v"></option></template>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>分级 Tier</label>
+            <select x-model="paperFilter.tier" @change="applyPaperFilter()">
+              <option value="">全部分级</option><option>S</option><option>A</option><option>B</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>状态</label>
+            <select x-model="paperFilter.status" @change="applyPaperFilter()">
+              <option value="">全部状态</option>
+              <option>QUEUED</option><option>STAGED</option><option>PUBLISHED</option><option>CLEANED</option><option>FAILED</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <label class="check-label"><input type="checkbox" x-model="paperFilter.hasCode" @change="applyPaperFilter()"> 💻 仅看有开源代码</label>
+          <label class="check-label"><input type="checkbox" x-model="paperFilter.radarOnly" @change="applyPaperFilter()"> 🔥 仅看 Radar 命中</label>
+          <button class="btn btn-primary" @click="applyPaperFilter()">应用筛选</button>
+          <button class="btn" @click="resetPaperFilter()">重置</button>
+        </div>
+      </div>
+
+      <!-- 结果表格 -->
+      <div class="panel table-panel">
+        <div class="table-head">
+          <h3 style="margin:0">论文列表</h3>
+          <span class="muted" x-text="papers.total ? ('第 '+(paperFilter.offset+1)+'–'+Math.min(paperFilter.offset+paperFilter.limit,papers.total)+' 条 / 共 '+papers.total+' 篇') : '暂无数据'"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="tbl paper-tbl">
+            <thead><tr><th>论文标题</th><th>Venue</th><th>分级</th><th>状态</th><th>开源</th><th>操作</th></tr></thead>
+            <tbody>
+              <template x-for="p in papers.items" :key="p.paper_uid">
+                <tr>
+                  <td class="title-cell">
+                    <a :href="p.paper_url" target="_blank" x-text="p.title"></a>
+                    <div class="paper-meta">
+                      <span class="meta-score" x-text="'⭐ '+p.score"></span>
+                      <span x-show="p.is_radar_hit" class="meta-radar">🔥 Radar</span>
+                      <template x-for="t in (p.tags||[]).slice(0,4)" :key="t">
+                        <span class="meta-tag" x-text="t"></span>
+                      </template>
+                      <span class="meta-time" x-show="p.fetch_date" :title="'入库：'+p.fetch_date">📥 <span x-text="p.fetch_date"></span></span>
+                      <span class="meta-time" x-show="p.downloaded_at" :title="'下载：'+fmtLogTime(p.downloaded_at)">📄 <span x-text="fmtLogTime(p.downloaded_at).slice(5,16)"></span></span>
+                      <span class="meta-time" x-show="p.last_analysis_at" :title="'解析：'+fmtLogTime(p.last_analysis_at)">🤖 <span x-text="fmtLogTime(p.last_analysis_at).slice(5,16)"></span></span>
+                      <span class="meta-uid" x-text="p.paper_uid"></span>
+                    </div>
+                  </td>
+                  <td><span class="venue-badge" x-text="p.venue"></span></td>
+                  <td><span class="badge" :class="'tier-'+p.tier" x-text="p.tier"></span></td>
+                  <td><span class="badge" :class="'status-'+p.status.toLowerCase()" x-text="p.status"></span></td>
+                  <td>
+                    <a x-show="p.code_url" class="code-link" :href="p.code_url" target="_blank" title="打开代码仓库">💻 GitHub</a>
+                    <span x-show="!p.code_url" class="muted">—</span>
+                  </td>
+                  <td class="ops">
+                    <div class="op-group">
+                      <button class="btn btn-xs" :class="p.tier==='S'?'btn-primary':''" @click="setTier(p.paper_uid,'S')" title="设为 S 级精读">升 S</button>
+                      <button class="btn btn-xs" :class="p.tier==='B'?'btn-warn':''" @click="setTier(p.paper_uid,'B')" title="降为 B 级归档">降 B</button>
+                      <button class="btn btn-xs" @click="setTier(p.paper_uid,'SKIP')" title="跳过不分析">跳过</button>
+                    </div>
+                    <div class="op-group">
+                      <button class="btn btn-xs btn-primary" @click="openPipeline(p)" title="查看处理流水线与下一步">🚀 流水线</button>
+                      <button class="btn btn-xs" @click="copyBibtex(p.paper_uid)" title="复制 BibTeX">BibTeX</button>
+                      <template x-if="p.status==='FAILED'">
+                        <button class="btn btn-xs btn-danger" @click="retryPaper(p.paper_uid)" :title="p.last_error||'重试'">重试</button>
+                      </template>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div class="empty-state" x-show="papers.total===0">
+            <div class="empty-icon">📭</div>
+            <div>没有匹配的论文</div>
+            <div class="muted small">试试调整筛选条件，或先执行「拉取论文」</div>
+          </div>
+        </div>
+        <div class="pager">
+          <button class="btn btn-sm" @click="pageBack()" :disabled="paperFilter.offset===0">← 上一页</button>
+          <span x-text="'第 '+paperPage()+' / '+paperTotalPages()+' 页'"></span>
+          <button class="btn btn-sm" @click="pageNext()" :disabled="!paperHasNext()">下一页 →</button>
+          <select class="page-size" x-model.number="paperFilter.limit" @change="paperFilter.offset=0;loadPapers()" title="每页条数">
+            <option :value="20">20 / 页</option><option :value="50">50 / 页</option><option :value="100">100 / 页</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 论文处理流水线弹窗 -->
+      <template x-if="pipelinePaper">
+        <div class="modal-backdrop" @click.self="pipelinePaper=null">
+          <div class="modal pipeline-modal">
+            <div class="inline-form" style="justify-content:space-between">
+              <h3 style="margin:0">🚀 处理流水线</h3>
+              <button class="link" @click="pipelinePaper=null">关闭</button>
+            </div>
+            <p class="muted small" x-text="pipelinePaper.title" style="margin:6px 0 8px"></p>
+            <div class="pipeline-tags" x-show="pipelinePaper.tags&&pipelinePaper.tags.length">
+              <span class="muted small" style="margin-right:6px">关键词：</span>
+              <template x-for="t in pipelinePaper.tags" :key="t"><span class="meta-tag" x-text="t"></span></template>
+            </div>
+            <div class="pipeline-steps">
+              <template x-for="(s,i) in pipelineSteps()" :key="s.key">
+                <div class="pipeline-step" :class="s.done?'done':(i===(pipelinePaper.stage||0)?'current':'todo')">
+                  <div class="step-icon" x-text="s.done?'✓':s.icon"></div>
+                  <div class="step-body">
+                    <b x-text="s.name"></b>
+                    <span class="muted small" x-text="s.desc"></span>
+                    <span class="step-time" x-show="s.time" x-text="'🕒 '+s.time"></span>
+                  </div>
+                  <span class="step-tag" x-text="s.done?'已完成':(i===(pipelinePaper.stage||0)?'下一步':'待进行')"></span>
+                </div>
+              </template>
+            </div>
+            <div class="pipeline-next" x-show="pipelineNextAction()">
+              <b>下一步建议：</b>
+              <span x-text="pipelineNextAction()?.hint"></span>
+              <button class="btn btn-sm btn-primary" @click="gotoPipelineView(pipelineNextAction().view)"
+                      x-text="pipelineNextAction()?.label+' →'"></button>
+            </div>
+            <div class="pipeline-next" x-show="!pipelineNextAction()"><b>✅ 全流程已完成</b> —— 该论文已发布到博客。</div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- ========== 页面9：AI 解析中心 ========== -->
+    <section x-show="view==='analyzer'" class="view" @dragover.prevent @drop.prevent="onImportLocalPdfs($event)">
+      <!-- 解析引擎与状态（引擎为可插拔下拉；论文列表与引擎解耦，保持稳定） -->
+      <div class="panel analyzer-engines">
+        <!-- 一键全自动流水线 -->
+        <div class="pipeline-banner">
+          <div class="pipeline-banner-info">
+            <b>🤖 一键全自动流水线</b>
+            <span class="muted small">采集 → 导出队列 → AI 解析（<span x-text="currentEngine()?currentEngine().name:analyzerEngine"></span>）→ 校验发布，全程无人值守、实时进度、可随时停止</span>
+          </div>
+          <button class="btn btn-primary" @click="runPipeline()">🚀 一键全自动</button>
+        </div>
+        <div class="analyzer-controls">
+          <div class="analyzer-engine-row">
+            <label class="engine-select-label">解析引擎
+              <select x-model="analyzerEngine" class="engine-select">
+                <template x-for="e in analyzerEngines" :key="e.id">
+                  <option :value="e.id" :disabled="!e.available"
+                          x-text="e.icon+' '+e.name+(e.available?'':'（不可用）')"></option>
+                </template>
+              </select>
+            </label>
+            <span class="engine-desc" x-text="currentEngine() ? currentEngine().description : ''"></span>
+            <span class="engine-mode-badge" :class="currentEngine() && currentEngine().mode==='manual'?'manual':'auto'"
+                  x-text="currentEngine() ? (currentEngine().mode==='manual'?'手动协作':'全自动') : ''"></span>
+          </div>
+          <!-- 模型选择（来自本地 DSH 配置，支持的引擎共用） -->
+          <template x-if="currentEngine() && currentEngine().supports_model">
+            <div class="model-selector">
+              <div class="inline-form wrap">
+                <label>模型提供方
+                  <select x-model="selectedProvider">
+                    <option value="">全部</option>
+                    <template x-for="p in harnessModels.providers" :key="p"><option :value="p" x-text="p"></option></template>
+                  </select>
+                </label>
+                <label>分析模型
+                  <select x-model="selectedModel">
+                    <option value="">使用默认配置</option>
+                    <template x-for="m in harnessModelsForSelect()" :key="m.provider+'/'+m.id">
+                      <option :value="m.id" x-text="m.name+' ('+m.id+')'"></option>
+                    </template>
+                  </select>
+                </label>
+                <button class="btn btn-sm" @click="loadHarnessModels()">🔄 刷新模型</button>
+              </div>
+              <div class="muted small" x-text="harnessModels.message || '正在读取本地 DSH 模型目录…'"></div>
+            </div>
+          </template>
+        </div>
+
+        <div class="analyzer-kpis">
+          <div class="analyzer-kpi"><div class="kpi-label">待解析队列</div><div class="kpi-value" x-text="analyzerStatus.queue_total||0"></div>
+            <div class="kpi-hint" x-text="'S 级 '+(analyzerStatus.queue_s||0)+' · A 级 '+(analyzerStatus.queue_a||0)"></div></div>
+          <div class="analyzer-kpi"><div class="kpi-label">已选引擎</div><div class="kpi-value small-value" x-text="currentEngine()?currentEngine().name:analyzerEngine"></div>
+            <div class="kpi-hint" x-text="'超时 '+(analyzerStatus.timeout_seconds||0)+'s · 重试 '+(analyzerStatus.max_retries||0)+' 次'"></div></div>
+        </div>
+
+        <!-- 全自动引擎：统一操作 -->
+        <template x-if="currentEngine() && currentEngine().mode==='auto'">
+          <div class="inline-form wrap" style="margin-top:12px">
+            <template x-if="currentEngine() && currentEngine().supports_check">
+              <button class="btn" @click="analyzerCheck(false)">🔌 检测连通性</button>
+            </template>
+            <button class="btn btn-primary" @click="runAnalyzer()" :disabled="!selectedPapers.length">
+              🚀 用「<span x-text="currentEngine()?currentEngine().name:''"></span>」解析选中论文
+            </button>
+            <span class="muted small" x-text="'已选 '+selectedPapers.length+' 篇'+(selectedModel?(' · 模型 '+selectedModel):'')"></span>
+          </div>
+        </template>
+        <!-- 手动协作引擎：协作工具 -->
+        <template x-if="currentEngine() && currentEngine().mode==='manual'">
+          <div class="inline-form wrap" style="margin-top:12px">
+            <label>Harness 地址 <input type="text" x-model="harnessUrl" style="min-width:260px"></label>
+            <a class="btn btn-primary" :href="harnessUrl" target="_blank">🌐 打开 Harness Web</a>
+            <button class="btn" @click="copyBatchInstruction()">📋 复制整批指令</button>
+            <button class="btn" @click="loadAnalyzerQueue()">🔄 刷新队列</button>
+            <span class="muted small">复制单篇 Prompt → 粘贴解析 → 队列里「回填」入库</span>
+          </div>
+        </template>
+        <div class="check-result" x-show="analyzerCheckResult" :class="analyzerCheckResult && analyzerCheckResult.ok?'ok':'err'"
+             x-text="analyzerCheckResult ? analyzerCheckResult.message : ''"></div>
+      </div>
+
+      <!-- SSE 进度 -->
+      <template x-if="analyzerTaskId">
+        <div class="panel analyzer-progress">
+          <div class="inline-form" style="justify-content:space-between">
+            <b x-text="(analyzerProgress.stage||'')+' — '+(analyzerProgress.message||'')"></b>
+            <button class="btn btn-sm btn-danger" @click="cancelAnalyzerTask()">■ 停止解析</button>
+          </div>
+          <div class="progress"><div class="progress-bar" :style="'width:'+(analyzerProgress.percent||0)+'%'"></div></div>
+          <div class="terminal"><template x-for="(l,i) in analyzerLogs" :key="i"><div :class="'log-'+l.level" x-text="fmtLogTime(l.timestamp)+' '+l.message"></div></template></div>
+          <div class="analyzer-result-link" x-show="analyzerResult">
+            <span x-text="'✓ 完成 '+(analyzerResult.count||0)+' 篇'"></span>
+            <button class="link" @click="switchView('staging')">去待审工作台查看 →</button>
+          </div>
+        </div>
+      </template>
+
+      <!-- 待解析队列表 -->
+      <div class="panel">
+        <div class="table-head">
+          <h3 style="margin:0">📋 待解析队列</h3>
+          <div class="inline-form">
+            <label class="btn btn-sm btn-primary" title="导入本地已下载的 PDF，直接解析（无需 fetch/download）">
+              📥 导入本地 PDF
+              <input type="file" accept="application/pdf,.pdf" multiple style="display:none" @change="onImportLocalPdfs($event)">
+            </label>
+            <button class="btn btn-sm" @click="resumeAnalysis()" title="跳过已成功的，续传剩余论文（断点续传）">🔄 断点续传</button>
+            <button class="btn btn-sm" @click="selectAllQueue(true)">全选</button>
+            <button class="btn btn-sm" @click="selectQueueByTier('S')">仅选 S 级</button>
+            <button class="btn btn-sm" @click="selectAllQueue(false)">清空选择</button>
+          </div>
+        </div>
+        <!-- 解析进度分类概览 -->
+        <div class="analysis-status-bar">
+          <button class="analysis-stat clickable" @click="openProgressDetail('running')" title="点击查看解析中的论文"><b x-text="analyzerProgressStats.running||0"></b> 解析中</button>
+          <button class="analysis-stat ok clickable" @click="openProgressDetail('success')" title="点击查看已解析的论文"><b x-text="analyzerProgressStats.success||0"></b> 已解析</button>
+          <button class="analysis-stat err clickable" @click="openProgressDetail('failed')" title="点击查看解析失败的论文"><b x-text="analyzerProgressStats.failed||0"></b> 失败</button>
+          <button class="analysis-stat warn clickable" @click="openProgressDetail('interrupted')" title="点击查看中断待续的论文"><b x-text="analyzerProgressStats.interrupted||0"></b> 中断待续</button>
+          <span class="muted small" style="margin-left:auto">点击数字查看明细 · 进程重启后中断任务自动标记</span>
+        </div>
+        <p class="muted small" style="margin:8px 0 0">队列包含「已导出任务(QUEUED)」和「本地已下载 PDF(DOWNLOADED)」。后者解析时会自动从 PDF 抽取全文并生成 13 节 Prompt；也可直接把 PDF 拖到本页导入。</p>
+        <div x-show="importLocalMsg" class="check-result" :class="importLocalOk?'ok':'err'" x-text="importLocalMsg"></div>
+        <div class="inline-form wrap" style="margin-bottom:10px">
+          <label>搜索 <input type="text" x-model="queueFilter.q" @input.debounce.400ms="queueSearch()" placeholder="标题 / UID" style="min-width:200px"></label>
+          <label>分级
+            <select x-model="queueFilter.tier" @change="queueSearch()">
+              <option value="">全部</option><option value="S">S</option><option value="A">A</option><option value="B">B</option>
+            </select>
+          </label>
+          <label>来源
+            <select x-model="queueFilter.status" @change="queueSearch()">
+              <option value="">全部</option><option value="QUEUED">队列</option><option value="DOWNLOADED">本地PDF</option>
+            </select>
+          </label>
+          <span class="muted small" x-text="'共 '+queueTotal+' 篇 · 第 '+queuePage()+'/'+queuePages()+' 页'"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="tbl analyzer-queue-tbl">
+            <thead><tr><th>选</th><th>Tier</th><th>来源</th><th>解析状态</th><th>Venue</th><th>标题</th><th>正文</th><th>架构图</th><th>操作</th></tr></thead>
+            <tbody><template x-for="q in analyzerQueue" :key="q.paper_uid">
+              <tr>
+                <td><input type="checkbox" :checked="selectedPapers.includes(q.paper_uid)" @change="togglePaperSelect(q.paper_uid)"></td>
+                <td><span class="badge" :class="'tier-'+q.tier" x-text="q.tier"></span></td>
+                <td><span class="badge" :class="q.status==='DOWNLOADED'?'warn':'ok'" x-text="q.status==='DOWNLOADED'?'📄 本地PDF':'📦 队列'"></span></td>
+                <td><span class="badge" :class="paperAnalyzeState(q.paper_uid).cls" x-text="paperAnalyzeState(q.paper_uid).label"></span></td>
+                <td x-text="q.venue"></td>
+                <td class="title-cell" x-text="q.title"></td>
+                <td x-text="q.chars ? (q.chars/1000).toFixed(1)+'k' : '—'"></td>
+                <td x-text="q.has_figures?'✓':'—'"></td>
+                <td class="ops">
+                  <div class="op-group">
+                    <button class="btn btn-xs btn-primary" @click="runAnalyzer([q.paper_uid])"
+                            :title="'用当前引擎解析：'+(currentEngine()?currentEngine().name:analyzerEngine)">
+                      🚀 解析
+                    </button>
+                  </div>
+                  <div class="op-group">
+                    <button class="btn btn-xs" @click="copyPrompt(q.paper_uid)" title="复制 Prompt 到 Harness Web">📋 Prompt</button>
+                    <button class="btn btn-xs" @click="openImport(q.paper_uid)" title="粘贴 Harness 结果回填">📥 回填</button>
+                    <button class="btn btn-xs" @click="viewResult(q.paper_uid)" title="查看本地解析后的 Markdown">👁️ 结果</button>
+                    <button class="btn btn-xs btn-warn" @click="syncToBlog(q.paper_uid)" title="把解析结果同步到博客仓库">🌐 发布</button>
+                  </div>
+                </td>
+              </tr>
+            </template></tbody>
+          </table>
+          <div class="empty-state" x-show="!analyzerQueue.length"><div class="empty-icon">📭</div><div>暂无待解析论文</div>
+            <div class="muted small">先在任务中心导出队列，或点上方「导入本地 PDF」直接解析你已有的 PDF</div></div>
+        </div>
+        <div class="pager">
+          <button class="btn btn-sm" @click="queuePageBack()" :disabled="queueFilter.offset===0">← 上一页</button>
+          <span x-text="'第 '+queuePage()+' / '+queuePages()+' 页'"></span>
+          <button class="btn btn-sm" @click="queuePageNext()" :disabled="queueFilter.offset+queueFilter.limit>=queueTotal">下一页 →</button>
+          <select class="page-size" x-model.number="queueFilter.limit" @change="queueFilter.offset=0;loadAnalyzerQueue()" title="每页条数">
+            <option :value="10">10 / 页</option><option :value="20">20 / 页</option><option :value="50">50 / 页</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 粘贴回填弹窗 -->
+      <template x-if="importUid">
+        <div class="modal-backdrop" @click.self="importUid=null">
+          <div class="modal">
+            <div class="inline-form" style="justify-content:space-between"><h3 style="margin:0" x-text="'粘贴解析结果：'+importUid"></h3>
+              <button class="link" @click="importUid=null">关闭</button></div>
+            <textarea class="import-textarea" x-model="importMarkdown" placeholder="粘贴 DeepSeek Harness / WorkBuddy 生成的完整 Markdown…"></textarea>
+            <div class="inline-form" style="margin-top:10px">
+              <button class="btn btn-primary" @click="submitImport()">💾 保存并校验入库</button>
+              <span class="muted small" x-text="importMsg"></span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 解析结果查看弹窗 -->
+      <template x-if="resultUid">
+        <div class="modal-backdrop" @click.self="resultUid=null">
+          <div class="modal result-modal">
+            <div class="inline-form" style="justify-content:space-between">
+              <h3 style="margin:0" x-text="'解析结果：'+resultUid"></h3>
+              <div class="inline-form">
+                <button class="btn btn-sm btn-warn" @click="syncToBlog(resultUid)">🌐 同步到博客仓库</button>
+                <button class="link" @click="resultUid=null">关闭</button>
+              </div>
+            </div>
+            <div class="muted small" x-text="resultPath || ''"></div>
+            <pre class="result-preview" x-text="resultContent || '加载中…'"></pre>
+          </div>
+        </div>
+      </template>
+
+      <!-- 历史审计 -->
+      <div class="panel">
+        <div class="inline-form" style="justify-content:space-between"><h3 style="margin:0">📜 解析审计历史</h3>
+          <button class="btn btn-sm" @click="loadAnalyzerHistory()">刷新</button></div>
+        <table class="tbl"><thead><tr><th>时间</th><th>论文</th><th>引擎</th><th>尝试</th><th>耗时</th><th>输出</th><th>状态</th><th>错误</th><th>详情</th></tr></thead>
+        <tbody><template x-for="h in analyzerHistory" :key="h.id">
+          <tr><td x-text="h.created_at"></td><td x-text="h.paper_uid"></td><td x-text="h.backend"></td>
+          <td x-text="h.attempt"></td><td x-text="h.duration_ms+'ms'"></td><td x-text="h.output_chars"></td>
+          <td><span class="badge" :class="h.status==='SUCCESS'?'ok':'err'" x-text="h.status"></span></td>
+          <td class="small" x-text="(h.error_message||'—').slice(0,60)"></td>
+          <td><button class="btn btn-xs" @click="showRunError(h)" title="查看完整错误详情（stderr/HTTP响应/校验错误）">🔍 详情</button></td></tr>
+        </template></tbody></table>
+      </div>
+
+      <!-- 解析错误详情弹窗 -->
+      <template x-if="runErrorDetail">
+        <div class="modal-backdrop" @click.self="runErrorDetail=null">
+          <div class="modal result-modal">
+            <div class="inline-form" style="justify-content:space-between">
+              <h3 style="margin:0" x-text="'错误详情：'+runErrorDetail.paper_uid"></h3>
+              <button class="link" @click="runErrorDetail=null">关闭</button>
+            </div>
+            <div class="error-detail-grid">
+              <div><b>状态</b><span x-text="runErrorDetail.status"></span></div>
+              <div><b>引擎</b><span x-text="runErrorDetail.backend"></span></div>
+              <div><b>模型</b><span x-text="runErrorDetail.model_name||'—'"></span></div>
+              <div><b>尝试</b><span x-text="runErrorDetail.attempt"></span></div>
+              <div><b>耗时</b><span x-text="runErrorDetail.duration_ms+'ms'"></span></div>
+              <div><b>时间</b><span x-text="runErrorDetail.created_at"></span></div>
+            </div>
+            <div class="error-section" x-show="runErrorDetail.error_message">
+              <b>错误信息</b><pre x-text="runErrorDetail.error_message"></pre>
+            </div>
+            <template x-if="parsedErrorDetail(runErrorDetail.error_detail)">
+              <div class="error-section">
+                <b>结构化详情（stderr / HTTP 响应 / 退出码）</b>
+                <pre x-text="JSON.stringify(parsedErrorDetail(runErrorDetail.error_detail),null,2)"></pre>
+              </div>
+            </template>
+            <template x-if="parsedErrorDetail(runErrorDetail.errors_json)">
+              <div class="error-section">
+                <b>校验错误列表</b><pre x-text="JSON.stringify(parsedErrorDetail(runErrorDetail.errors_json),null,2)"></pre>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- 进度分类明细弹窗 -->
+      <template x-if="progressDetail">
+        <div class="modal-backdrop" @click.self="progressDetail=null">
+          <div class="modal result-modal">
+            <div class="inline-form" style="justify-content:space-between">
+              <h3 style="margin:0" x-text="'📋 '+progressDetail.label+'（'+progressDetail.count+' 篇）'"></h3>
+              <button class="link" @click="progressDetail=null">关闭</button>
+            </div>
+            <table class="tbl" style="margin-top:12px"><thead><tr><th>论文</th><th>引擎</th><th>模型</th><th>尝试</th><th>耗时</th><th>状态</th><th>阶段/错误</th><th>操作</th></tr></thead>
+            <tbody><template x-for="r in progressDetail.items" :key="r.id">
+              <tr><td class="small" x-text="r.paper_uid"></td><td x-text="r.backend"></td>
+              <td class="small" x-text="r.model_name||'—'"></td><td x-text="r.attempt"></td>
+              <td x-text="r.duration_ms+'ms'"></td>
+              <td><span class="badge" :class="r.status==='SUCCESS'?'ok':'err'" x-text="r.status"></span></td>
+              <td class="small" x-text="(r.stage||'')+(r.error_message?(' · '+r.error_message):'')"></td>
+              <td class="ops"><div class="op-group">
+                <template x-if="r.status==='SUCCESS'">
+                  <button class="btn btn-xs" @click="jumpToStaging(r.paper_uid)" title="在待审工作台打开">✍️ 待审</button>
+                </template>
+                <button class="btn btn-xs" @click="openResultFromDetail(r.paper_uid)" title="查看解析结果 Markdown">👁️ 结果</button>
+                <button class="btn btn-xs btn-primary" @click="reparseWithPdf(r.paper_uid)" title="用你的提示词原文 + 本地 PDF 重新解析">🔄 重新解析</button>
+              </div></td></tr>
+            </template></tbody></table>
+            <div class="empty-state" x-show="!progressDetail.items||!progressDetail.items.length"><div class="empty-icon">📭</div><div>该分类暂无记录</div></div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- ========== 页面4：待审工作台 ========== -->
+    <section x-show="view==='staging'" class="view">
+      <div class="review-layout">
+        <!-- 左栏：待审队列 -->
+        <div class="panel review-list">
+          <div class="review-list-head">
+            <h3 style="margin:0">📋 待审队列</h3>
+            <span class="count-pill" x-text="staging.length"></span>
+          </div>
+          <p class="muted small" style="margin:6px 0 10px">选择一篇论文进行审阅与批注</p>
+          <div class="inline-form wrap" style="margin-bottom:10px">
+            <label>搜索 <input type="text" x-model="stagingFilter.q" @input.debounce.400ms="stagingSearch()" placeholder="标题 / UID" style="min-width:160px"></label>
+            <label>状态
+              <select x-model="stagingFilter.status" @change="stagingSearch()">
+                <option value="pending">⏳ 待发布</option>
+                <option value="published">🌐 已发布</option>
+                <option value="all">📋 全部</option>
+              </select>
+            </label>
+            <span class="muted small" x-text="'共 '+stagingTotal+' 篇 · 第 '+stagingPage()+'/'+stagingPages()+' 页'"></span>
+          </div>
+          <template x-if="staging.length===0">
+            <div class="review-empty">
+              <div class="empty-icon">📭</div>
+              <div>暂无待审论文</div>
+              <div class="muted small">运行「校验」后，通过校验的 Markdown 会出现在这里</div>
+            </div>
+          </template>
+          <template x-for="g in stagedGroups()" :key="g.date">
+            <div class="review-group">
+              <div class="review-group-label" x-text="'📅 '+g.date"></div>
+              <template x-for="s in g.items" :key="s.paper_uid">
+                <div class="review-item" :class="{selected: selectedStaging===s.paper_uid}" @click="openStaging(s.paper_uid)">
+                  <div class="review-item-top">
+                    <span class="venue-badge" x-text="s.venue"></span>
+                    <span class="badge" :class="'tier-'+s.tier" x-text="s.tier"></span>
+                    <span class="badge ok" x-show="s.published" title="已发布到博客">🌐 已发布</span>
+                    <span class="badge" :class="s.valid?'ok':'err'" x-text="s.valid?'✓ 通过':'✗ 待修正'" :style="s.published?'':'margin-left:auto'"></span>
+                  </div>
+                  <div class="review-title" x-text="s.title"></div>
+                  <div class="review-tldr" x-text="s.tldr"></div>
+                  <img x-show="s.thumbnail" :src="s.thumbnail" class="thumb" alt="架构图">
+                </div>
+              </template>
+            </div>
+          </template>
+          <div class="pager" x-show="stagingTotal>stagingFilter.limit">
+            <button class="btn btn-sm" @click="stagingPageBack()" :disabled="stagingFilter.offset===0">← 上一页</button>
+            <span x-text="'第 '+stagingPage()+' / '+stagingPages()+' 页'"></span>
+            <button class="btn btn-sm" @click="stagingPageNext()" :disabled="stagingFilter.offset+stagingFilter.limit>=stagingTotal">下一页 →</button>
+            <select class="page-size" x-model.number="stagingFilter.limit" @change="stagingFilter.offset=0;loadStaging()" title="每页条数">
+              <option :value="20">20 / 页</option><option :value="50">50 / 页</option><option :value="100">100 / 页</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 右栏：编辑与预览 -->
+        <div class="panel editor-panel">
+          <template x-if="selectedStaging">
+            <div class="editor-shell">
+              <div class="editor-header">
+                <div>
+                  <h3 x-text="selectedStaging" style="margin:0 0 4px"></h3>
+                  <span class="muted small">在线编辑 Markdown，右侧实时预览，保存后自动重新校验</span>
+                </div>
+                <button class="btn btn-sm" @click="selectedStaging=null">✕ 关闭</button>
+              </div>
+
+              <div class="annotation-bar">
+                <span class="muted">快捷插入：</span>
+                <button class="btn btn-sm" @click="insertNote()">💡 个人思考</button>
+                <button class="btn btn-sm" @click="insertStar()">⭐ 必读</button>
+                <button class="btn btn-sm" @click="insertRepro()">🔥 计划复现</button>
+              </div>
+
+              <div class="editor-cols">
+                <div class="editor-pane">
+                  <div class="pane-head">✏️ Markdown 编辑</div>
+                  <textarea x-model="editorContent" spellcheck="false" placeholder="在此编辑论文分析 Markdown…"></textarea>
+                </div>
+                <div class="editor-pane">
+                  <div class="pane-head">👁️ 实时预览</div>
+                  <div class="preview" x-html="renderMd(editorContent)"></div>
+                </div>
+              </div>
+
+              <div class="editor-footer">
+                <div class="editor-actions">
+                  <button class="btn btn-primary" @click="saveStaging()">💾 保存并重新校验</button>
+                  <template x-if="!currentStagingPublished()">
+                    <button class="btn btn-warn" @click="publishStaging(selectedStaging)"
+                            :disabled="!currentStagingValid()" title="仅校验通过的文章可发布到博客">🌐 发布到博客</button>
+                  </template>
+                  <template x-if="currentStagingPublished()">
+                    <button class="btn" @click="viewPublishedBlog()" title="这篇文章已发布，点击查看博客文章">✓ 已发布 · 查看博客</button>
+                  </template>
+                  <button class="btn btn-danger" @click="removeStaging()">🗑 移出发布队列</button>
+                </div>
+                <span class="validate-msg" x-show="validateMsg" x-text="validateMsg"></span>
+              </div>
+            </div>
+          </template>
+          <template x-if="!selectedStaging">
+            <div class="editor-placeholder">
+              <div class="placeholder-icon">📝</div>
+              <h3>待审工作台</h3>
+              <p class="muted">从左侧列表选择一篇论文，开始审阅与批注</p>
+              <div class="placeholder-tips">
+                <div>✏️ 在线编辑 Markdown</div>
+                <div>👁️ 所见即所得预览</div>
+                <div>💡 一键插入个人批注与星标</div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- 已发布到博客的文章（以博客仓库文件为准） -->
+      <div class="panel" style="margin-top:16px">
+        <div class="inline-form" style="justify-content:space-between">
+          <h3 style="margin:0">🌐 已发布到博客 <span class="count-pill" x-text="blogArticles.total||0"></span></h3>
+          <div class="inline-form">
+            <span class="badge ok" x-text="'已推送 '+(blogArticles.by_state?.pushed||0)"></span>
+            <span class="badge warn" x-text="'待推送 '+((blogArticles.by_state?.committed||0)+(blogArticles.by_state?.modified||0)+(blogArticles.by_state?.untracked||0))"></span>
+            <button class="btn btn-sm" @click="loadBlogArticles()">🔄 刷新</button>
+          </div>
+        </div>
+        <div class="inline-form wrap" style="margin:8px 0">
+          <label>搜索 <input type="text" x-model="blogFilter.q" @input.debounce.400ms="blogSearch()" placeholder="标题 / UID / Venue" style="min-width:200px"></label>
+          <span class="muted small" x-text="'第 '+blogPage()+' / '+blogPages()+' 页'"></span>
+        </div>
+        <p class="muted small" style="margin:8px 0">发布记录以博客仓库 <code>docs/papers/</code> 中实际存在的文章为准；状态来自 Git。</p>
+        <table class="tbl"><thead><tr><th>论文</th><th>标题</th><th>Venue</th><th>路径</th><th>字数</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody><template x-for="a in blogArticles.items" :key="a.path">
+          <tr>
+            <td class="small" x-text="a.paper_uid"></td>
+            <td x-text="a.title"></td>
+            <td x-text="a.venue"></td>
+            <td class="small" x-text="a.path"></td>
+            <td x-text="a.chars"></td>
+            <td><span class="badge" :class="a.git_state==='pushed'?'ok':'warn'"
+                      x-text="a.git_state==='pushed'?'✓ 已推送':(a.git_state==='committed'?'已提交未推送':'未提交')"></span></td>
+            <td><button class="btn btn-xs" @click="viewBlogArticle(a)">👁️ 查看</button></td>
+          </tr>
+        </template></tbody></table>
+        <div class="empty-state" x-show="!blogArticles.items||!blogArticles.items.length"><div class="empty-icon">📭</div><div>博客中还没有文章</div>
+          <div class="muted small">在左侧选中已通过校验的论文，点「发布到博客」</div></div>
+        <div class="pager" x-show="(blogArticles.total||0)>blogFilter.limit">
+          <button class="btn btn-sm" @click="blogPageBack()" :disabled="blogFilter.offset===0">← 上一页</button>
+          <span x-text="'第 '+blogPage()+' / '+blogPages()+' 页'"></span>
+          <button class="btn btn-sm" @click="blogPageNext()" :disabled="blogFilter.offset+blogFilter.limit>=(blogArticles.total||0)">下一页 →</button>
+          <select class="page-size" x-model.number="blogFilter.limit" @change="blogFilter.offset=0;loadBlogArticles()" title="每页条数">
+            <option :value="10">10 / 页</option><option :value="20">20 / 页</option><option :value="50">50 / 页</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 博客文章查看弹窗 -->
+      <template x-if="blogArticleView">
+        <div class="modal-backdrop" @click.self="blogArticleView=null">
+          <div class="modal result-modal">
+            <div class="inline-form" style="justify-content:space-between">
+              <h3 style="margin:0" x-text="'博客文章：'+(blogArticleView.title||blogArticleView.paper_uid)"></h3>
+              <button class="link" @click="blogArticleView=null">关闭</button>
+            </div>
+            <div class="muted small" x-text="blogArticleView.path"></div>
+            <pre class="result-preview" x-text="blogArticleView.content || '加载中…'"></pre>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- ========== 页面5：存储治理 ========== -->
+    <section x-show="view==='storage'" class="view">
+      <div class="storage-stats">
+        <div class="storage-card storage-temp">
+          <div class="storage-card-head"><span class="storage-icon">📄</span><span>临时 PDF 缓存</span></div>
+          <button class="storage-value clickable" @click="openStorageDetail('pdfs')" title="点击查看 PDF 文件列表" x-text="storage.pdfs.size_mb+' MB'"></button>
+          <div class="storage-detail" x-text="storage.pdfs.files+' 个文件 · workspace/tmp/pdfs/ · 点击查看清单'"></div>
+          <div class="storage-bar"><div class="storage-bar-fill" :style="'width:'+storageBar(storage.pdfs.size_mb)+'%'"></div></div>
+        </div>
+        <div class="storage-card storage-queue">
+          <div class="storage-card-head"><span class="storage-icon">📦</span><span>分析任务队列</span></div>
+          <button class="storage-value clickable" @click="openStorageDetail('queue')" title="点击查看队列目录列表" x-text="storage.queue.size_mb+' MB'"></button>
+          <div class="storage-detail" x-text="storage.queue.dirs+' 个目录 · workspace/queue/ · 点击查看清单'"></div>
+          <div class="storage-bar"><div class="storage-bar-fill" :style="'width:'+storageBar(storage.queue.size_mb)+'%'"></div></div>
+        </div>
+        <div class="storage-card storage-protected">
+          <div class="storage-card-head"><span class="storage-icon">🛡️</span><span>SQLite 账本</span><span class="lock-tag">永久保护</span></div>
+          <div class="storage-value" x-text="storage.state_db.size_mb+' MB'"></div>
+          <div class="storage-detail">workspace/state.db · 清理器永不触碰</div>
+          <div class="storage-bar"><div class="storage-bar-fill protected" style="width:100%"></div></div>
+        </div>
+      </div>
+
+      <div class="storage-work">
+        <div class="panel cleanup-preview">
+          <h3 style="margin:0 0 6px">🧹 可清理预览（Dry-Run）</h3>
+          <p class="muted small" style="margin:0 0 16px">仅当论文已发布且校验通过、MD 真实存在时，其临时 PDF 与队列目录才满足安全删除条件。</p>
+          <template x-if="storage.cleanup_preview">
+            <div class="cleanup-result">
+              <div class="cleanup-metric"><button class="cleanup-num clickable" @click="openStorageDetail('cleanup')" title="点击查看可清理论文清单" x-text="storage.cleanup_preview.cleaned"></button><div class="muted small">篇可清理 · 点击查看</div></div>
+              <div class="cleanup-sep"></div>
+              <div class="cleanup-metric"><div class="cleanup-num" x-text="storage.cleanup_preview.freed_mb"></div><div class="muted small">MB 预计释放</div></div>
+              <div class="cleanup-sep"></div>
+              <div class="cleanup-status" :class="storage.cleanup_preview.cleaned>0?'has':'none'"
+                   x-text="storage.cleanup_preview.cleaned>0?'✓ 有可释放空间':'✓ 当前无需清理'"></div>
+            </div>
+          </template>
+          <div class="cleanup-actions">
+            <button class="btn btn-primary" @click="startTask('clean', {dry_run:false})">🗑 一键安全清理</button>
+            <button class="btn" @click="refreshStorage()">🔄 重新扫描预览</button>
+          </div>
+        </div>
+        <div class="panel safety-panel">
+          <h3 style="margin:0 0 12px">🔒 安全边界</h3>
+          <div class="safety-item"><span class="safety-ok">✓</span><div><b>路径越界保护</b><div class="muted small">仅删除 workspace/tmp 与 workspace/queue 内的文件</div></div></div>
+          <div class="safety-item"><span class="safety-ok">✓</span><div><b>账本永久保护</b><div class="muted small">state.db 永不进入清理候选</div></div></div>
+          <div class="safety-item"><span class="safety-ok">✓</span><div><b>发布仓库隔离</b><div class="muted small">paper_repo/ 不受清理影响</div></div></div>
+          <div class="safety-item"><span class="safety-ok">✓</span><div><b>校验失败保留</b><div class="muted small">未通过校验的论文 PDF 会被保留以便重试</div></div></div>
+        </div>
+      </div>
+
+      <!-- 存储明细弹窗 -->
+      <template x-if="storageDetail">
+        <div class="modal-backdrop" @click.self="storageDetail=null">
+          <div class="modal result-modal">
+            <div class="inline-form" style="justify-content:space-between">
+              <h3 style="margin:0" x-text="'📂 '+storageDetail.title+'（'+storageDetail.total+' 项）'"></h3>
+              <button class="link" @click="storageDetail=null">关闭</button>
+            </div>
+            <div class="table-scroll" style="margin-top:12px;max-height:52vh;overflow:auto">
+              <table class="tbl"><thead><tr>
+                <th x-text="storageDetail.kind==='queue'?'日期目录':(storageDetail.kind==='cleanup'?'论文':'论文 UID')"></th>
+                <th x-show="storageDetail.kind==='queue'">文件数</th>
+                <th>大小</th>
+                <th x-text="storageDetail.kind==='cleanup'?'将删除路径':'修改时间'"></th>
+              </tr></thead><tbody>
+                <template x-for="it in storageDetail.items" :key="it.path+it.uid">
+                  <tr>
+                    <template x-if="storageDetail.kind==='pdfs'">
+                      <td class="small" x-text="it.uid"></td><td>—</td><td x-text="(it.size_mb||0).toFixed(3)+' MB'"></td><td x-text="it.mtime"></td>
+                    </template>
+                    <template x-if="storageDetail.kind==='queue'">
+                      <td class="small" x-text="it.name"></td><td x-text="it.files"></td><td x-text="(it.size_mb||0).toFixed(3)+' MB'"></td><td x-text="it.mtime"></td>
+                    </template>
+                    <template x-if="storageDetail.kind==='cleanup'">
+                      <td class="small"><span x-text="it.name"></span><span class="muted small" x-text="it.uid?(' · '+it.uid):''"></span></td>
+                      <td>—</td><td x-text="(it.size_mb||0).toFixed(3)+' MB'"></td><td class="small" x-text="(it.paths||[]).join(', ')||'—'"></td>
+                    </template>
+                  </tr>
+                </template>
+              </tbody></table>
+            </div>
+            <div class="empty-state" x-show="!storageDetail.items||!storageDetail.items.length"><div class="empty-icon">📭</div><div>当前没有相关项目</div></div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- ========== 页面6：设置 ========== -->
+    <section x-show="view==='settings'" class="view">
+      <div class="settings-grid">
+        <div class="panel settings-card">
+          <div class="settings-card-head"><span class="settings-icon">🎯</span><div><h3 style="margin:0">兴趣画像</h3><div class="muted small">用逗号分隔多个条目，保存后自动备份 config.yaml</div></div></div>
+          <div class="settings-fields">
+            <div class="settings-field"><label>🔴 高优先级关键词 <span class="field-hint">+30/词</span></label><input type="text" x-model="settingsForm.high" placeholder="action recognition, multimodal"></div>
+            <div class="settings-field"><label>🟡 中优先级关键词 <span class="field-hint">+15/词</span></label><input type="text" x-model="settingsForm.medium" placeholder="diffusion, agent"></div>
+            <div class="settings-field"><label>⚪ 排除关键词 <span class="field-hint">-50/词</span></label><input type="text" x-model="settingsForm.exclude" placeholder="retinal, hyperspectral"></div>
+          </div>
+        </div>
+
+        <div class="panel settings-card">
+          <div class="settings-card-head"><span class="settings-icon">🔥</span><div><h3 style="margin:0">学者与机构雷达</h3><div class="muted small">命中即打 Radar 标记并加分</div></div></div>
+          <div class="settings-fields">
+            <div class="settings-field"><label>👤 关注学者 <span class="field-hint">+25/人</span></label><input type="text" x-model="settingsForm.authors" placeholder="Kaiming He, Ross Girshick"></div>
+            <div class="settings-field"><label>🏛 关注机构 <span class="field-hint">+15/机构</span></label><input type="text" x-model="settingsForm.affils" placeholder="Google DeepMind, FAIR"></div>
+          </div>
+        </div>
+
+        <div class="panel settings-card">
+          <div class="settings-card-head"><span class="settings-icon">⚙️</span><div><h3 style="margin:0">分级阈值与发布</h3><div class="muted small">S 阈值须 ≥ A 阈值，否则校验失败并保留原配置</div></div></div>
+          <div class="threshold-row">
+            <div class="threshold-box tier-s"><label>S 级阈值</label><input type="number" x-model.number="settingsForm.tierS"><span class="field-hint">≥ 该分进精读</span></div>
+            <div class="threshold-box tier-a"><label>A 级阈值</label><input type="number" x-model.number="settingsForm.tierA"><span class="field-hint">≥ 该分进速览</span></div>
+            <label class="check-label push-check"><input type="checkbox" x-model="settingsForm.autoPush"> 自动 git push</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel settings-actions">
+        <div class="inline-form">
+          <button class="btn btn-primary" @click="saveSettings()">💾 保存配置</button>
+          <button class="btn" @click="rescore()">🔁 用新规则重新打分</button>
+          <button class="btn" @click="loadSettings()">↩️ 撤销未保存修改</button>
+        </div>
+        <span class="settings-msg" :class="settingsMsg.startsWith('✗')?'err':'ok'" x-show="settingsMsg" x-text="settingsMsg"></span>
+      </div>
+    </section>
+
+    <!-- ========== 页面7：Git 发布中心 ========== -->
+    <section x-show="view==='git'" class="view">
+      <!-- 仓库状态总览 -->
+      <div class="panel git-status-bar">
+        <div class="git-status-head">
+          <div class="git-repo-id">
+            <span class="git-lock" x-show="gitStatus.is_ssh_remote">🔒</span>
+            <div>
+              <div class="git-branch-line"><span class="badge" x-text="gitStatus.branch || '未初始化'"></span><span class="muted small" x-text="gitStatus.remote_url || '未配置远端'"></span></div>
+              <div class="git-sync-line">
+                <span class="badge warn" x-show="gitStatus.ahead_count>0" x-text="'↑ 待推送 '+gitStatus.ahead_count+' 条'"></span>
+                <span class="badge err" x-show="gitStatus.behind_count>0" x-text="'↓ 远端新增 '+gitStatus.behind_count+' 条'"></span>
+                <span class="badge ok" x-show="!gitStatus.has_changes && gitStatus.ahead_count===0 && gitStatus.behind_count===0">✅ 已与远端同步</span>
+              </div>
+            </div>
+          </div>
+          <div class="git-quick-actions">
+            <button class="btn btn-sm" @click="testSsh()">🔌 检测 SSH 免密</button>
+            <button class="btn btn-sm" @click="runBuildCheck()">🔍 本地构建校验</button>
+            <button class="btn btn-sm" @click="togglePreview()" x-text="previewStatus.running?'⏹ 停止预览':'👁️ 启动预览'"></button>
+            <a class="btn btn-sm" :href="previewStatus.url || '#'" target="_blank" x-show="previewStatus.running">↗ 打开预览</a>
+            <button class="btn btn-sm btn-warn" x-show="gitStatus.behind_count>0" @click="gitPull()">↓ 拉取远端</button>
+            <a class="btn btn-sm" :href="gitStatus.blog_site_url || '#'" target="_blank" x-show="gitStatus.blog_site_url">🌐 在线博客</a>
+          </div>
+        </div>
+        <template x-if="pagesStatus && pagesStatus.gh_pages_remote">
+          <div class="pages-hint">
+            <span>ℹ️ gh-pages 已部署，但若访问 404，通常是 GitHub 仓库 Settings 未开启 Pages。请到 Settings → Pages 选择 <code>gh-pages</code> 分支 / root。</span>
+          </div>
+        </template>
+        <div class="ssh-result" x-show="sshResult" :class="sshResult.startsWith('✅')?'ok':'err'" x-text="sshResult"></div>
+        <template x-if="buildCheckResult">
+          <div class="build-check-result">
+            <div :class="buildCheckResult.ok?'ok':'err'" x-text="buildCheckResult.ok ? '✅ mkdocs --strict 构建通过' : '❌ 构建失败（'+buildCheckResult.error_count+' 错误 / '+buildCheckResult.warning_count+' 警告）'"></div>
+            <template x-for="i in buildCheckResult.issues" :key="i.file+i.message">
+              <div class="build-issue" x-text="'['+i.level+'] '+(i.file||'')+': '+i.message"></div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- 变更预览 + 提交操作 双栏 -->
+      <div class="git-work">
+        <div class="panel git-changes-panel">
+          <div class="git-panel-head">
+            <h3 style="margin:0">📝 待提交变更</h3>
+            <span class="muted small" x-text="'新增 '+gitStatus.added+' · 修改 '+gitStatus.modified+' · 删除 '+gitStatus.deleted"></span>
+          </div>
+          <div class="git-file-list">
+            <template x-for="c in gitStatus.changes" :key="c.path">
+              <div class="git-file" :class="{active: diffData && diffData.file_path===c.path}" @click="viewDiff(c.path)">
+                <span class="badge" :class="c.category==='deleted'?'err':(c.category==='modified'?'warn':'ok')" x-text="c.status"></span>
+                <span class="git-file-path" x-text="c.path"></span>
+              </div>
+            </template>
+            <div class="git-empty" x-show="!gitStatus.has_changes">✨ 工作区干净，无待提交变更</div>
+          </div>
+          <template x-if="diffData">
+            <div class="git-diff">
+              <div class="git-diff-head"><span x-text="diffData.file_path || '变更概览'"></span><button class="link" @click="diffData=null">收起</button></div>
+              <pre x-text="diffData.content || diffData.stat || ''"></pre>
+            </div>
+          </template>
+        </div>
+
+        <div class="panel git-commit-panel">
+          <div class="git-panel-head"><h3 style="margin:0">🚀 一键提交与推送</h3></div>
+          <div class="commit-field">
+            <label>Commit Message</label>
+            <input type="text" x-model="gitCommitMsg" :placeholder="'docs: publish N papers ('+todayStr()+')'">
+          </div>
+          <div class="commit-options">
+            <label class="check-label"><input type="checkbox" x-model="gitPullFirst"> 推送前自动拉取（pull --rebase）</label>
+            <label class="check-label"><input type="checkbox" x-model="gitCleanAfter"> 发布后自动清理本地 PDF</label>
+          </div>
+          <div class="commit-buttons">
+            <button class="btn btn-primary" @click="gitPublishAndPush()">🚀 全流程发布并推送</button>
+            <button class="btn" @click="gitCommitPush()">📤 仅 Git 提交并推送</button>
+          </div>
+          <template x-if="gitTaskId">
+            <div class="git-progress">
+              <div class="progress"><div class="progress-bar" :style="'width:'+(gitProgress.percent||0)+'%'"></div></div>
+              <p class="small" x-text="(gitProgress.stage||'')+' — '+(gitProgress.message||'')+' ('+(gitProgress.percent||0)+'%)'"></p>
+              <div class="terminal"><template x-for="(l,i) in gitLogs" :key="i"><div :class="'log-'+l.level" x-text="fmtLogTime(l.timestamp)+' '+l.message"></div></template></div>
+            </div>
+          </template>
+          <div class="git-result" x-show="gitResultMsg" :class="gitResultMsg.startsWith('✅')?'ok':'err'" x-text="gitResultMsg"></div>
+        </div>
+      </div>
+
+      <div class="panel git-history-panel">
+        <div class="git-history-head">
+          <div class="git-tabs">
+            <button class="tab-btn" :class="{active:gitTab==='commits'}" @click="gitTab='commits';loadCommits()">📜 Git 提交历史</button>
+            <button class="tab-btn" :class="{active:gitTab==='logs'}" @click="gitTab='logs';loadPushLogs()">📊 推送审计记录</button>
+          </div>
+          <div class="inline-form" x-show="gitTab==='commits'"><input type="text" x-model="commitSearch" placeholder="按提交信息筛选" @keyup.enter="loadCommits()"><button class="btn btn-sm" @click="loadCommits()">搜索</button></div>
+        </div>
+        <div x-show="gitTab==='commits'">
+          <div class="timeline">
+            <template x-for="c in commits" :key="c.hash">
+              <div class="timeline-item">
+                <div class="inline-form">
+                  <span class="badge" x-text="c.short_hash"></span>
+                  <span x-text="c.message"></span>
+                  <span class="badge" :class="c.is_pushed?'ok':'warn'" x-text="c.is_pushed?'已推送':'待推送'"></span>
+                </div>
+                <div class="muted small" x-text="c.author+' · '+c.relative_time+' · +'+c.insertions+'/-'+c.deletions+', '+c.files_changed+' files'"></div>
+                <button class="link" @click="viewCommit(c.hash)">展开详情</button>
+                <div x-show="commitDetail && commitDetail.hash===c.hash" class="commit-detail">
+                  <template x-for="f in (commitDetail && commitDetail.files || [])" :key="f.path">
+                    <div><span class="badge" x-text="f.category"></span> <span x-text="f.path"></span></div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div x-show="gitTab==='logs'">
+          <table class="tbl"><thead><tr><th>时间</th><th>来源</th><th>Hash</th><th>文件</th><th>耗时</th><th>状态</th></tr></thead>
+          <tbody><template x-for="l in pushLogs" :key="l.id">
+            <tr><td x-text="l.created_at"></td><td x-text="l.trigger_source"></td>
+            <td x-text="l.commit_hash || '—'"></td><td x-text="l.files_changed"></td>
+            <td x-text="l.duration_ms+'ms'"></td>
+            <td><span class="badge" :class="l.status==='SUCCESS'?'ok':'err'" x-text="l.status+(l.pushed?' ✓':'')"></span>
+              <div class="muted small" x-show="l.error_message" x-text="l.error_message"></div></td></tr>
+          </template></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 页面8：方向精准检索 ========== -->
+    <section x-show="view==='topics'" class="view">
+      <div class="panel topic-search-panel">
+        <div class="topic-head">
+          <h3 style="margin:0">🎯 研究方向精准检索</h3>
+          <span class="year-policy-badge" x-text="'时效策略：'+topicYearPolicy()"></span>
+        </div>
+        <div class="topic-query-wrap">
+          <label class="topic-query-label">研究方向（支持中英文与 + 组合）</label>
+          <div class="topic-query-row">
+            <input type="text" x-model="topicForm.query" @input.debounce.400ms="previewTopicQuery()"
+                   @keyup.enter="startTopicSearch()"
+                   placeholder="如：agent、agent+图像融合、HSI-MSI图像融合">
+            <button class="btn btn-primary" @click="startTopicSearch()" :disabled="!topicForm.query">🔍 开始检索</button>
+          </div>
+          <div class="topic-presets">
+            <span class="muted small">快捷方向：</span>
+            <template x-for="s in topicSubscriptions" :key="s.slug">
+              <button class="preset-pill" :class="topicForm.query===s.query?'selected':''"
+                      @click="topicForm.query=s.query;previewTopicQuery()"
+                      x-text="s.name"></button>
+            </template>
+            <button class="btn btn-sm" style="margin-left:auto" @click="runTopicSubscriptions()">🔄 一键追新所有订阅</button>
+          </div>
+        </div>
+
+        <template x-if="topicPreview">
+          <div class="query-preview">
+            <div class="query-preview-head">
+              <span>📄 检索式实时预览</span>
+              <button class="link" @click="topicPreview=null">收起</button>
+            </div>
+            <div class="query-preview-row"><b>arXiv</b><code x-text="topicPreview.arxiv_query"></code></div>
+            <div class="query-preview-row"><b>OpenAlex</b><code x-text="topicPreview.openalex_query"></code></div>
+            <div class="query-preview-row"><b>概念组</b><span class="muted small" x-text="topicPreview.expanded_query"></span></div>
+          </div>
+        </template>
+
+        <div class="topic-options">
+          <label class="check-label"><input type="checkbox" x-model="topicForm.onlyPrimaryYear" @change="topicYearPolicy()"> 仅看优先年份</label>
+          <label class="check-label"><input type="checkbox" x-model="topicForm.topVenuesOnly"> 仅限顶会顶刊</label>
+          <label class="check-label"><input type="checkbox" x-model="topicForm.autoDownload"> 自动下载 S 级 PDF</label>
+          <label class="inline-select">数量上限
+            <select x-model.number="topicForm.limit"><option :value="10">10</option><option :value="20">20</option><option :value="50">50</option></select>
+          </label>
+        </div>
+
+        <template x-if="topicTaskId">
+          <div class="topic-progress">
+            <div class="inline-form" style="justify-content:space-between">
+              <b x-text="'检索进度 '+(topicProgress.percent||0)+'%'"></b>
+              <div class="inline-form">
+                <span class="badge" :class="topicProgress.status==='SUCCESS'?'ok':(topicProgress.status==='FAILED'?'err':'warn')"
+                      x-text="topicProgress.status||'RUNNING'"></span>
+                <button class="btn btn-sm btn-danger" @click="cancelTopicTask()"
+                        x-show="!['SUCCESS','FAILED','CANCELLED'].includes(topicProgress.status)">■ 停止检索</button>
+              </div>
+            </div>
+            <div class="progress"><div class="progress-bar" :style="'width:'+(topicProgress.percent||0)+'%'"></div></div>
+            <p class="small" x-text="(topicProgress.stage||'准备中')+' — '+(topicProgress.message||'')"></p>
+            <div class="terminal"><template x-for="(l,i) in topicLogs" :key="i"><div :class="'log-'+l.level" x-text="fmtLogTime(l.timestamp)+' '+l.message"></div></template></div>
+          </div>
+        </template>
+      </div>
+
+      <template x-if="topicResult">
+        <div class="panel topic-result-panel">
+          <div class="topic-result-head">
+            <h3 style="margin:0">📊 检索结果</h3>
+            <span class="muted small" x-text="'过滤掉 '+topicResult.filtered_old_count+' 篇过早论文 · 新增入库 '+topicResult.new_inserted_count+' 篇'"></span>
+          </div>
+          <template x-for="grp in topicYearGroups()" :key="grp.year">
+            <div class="topic-year-group">
+              <div class="topic-year-head" :class="grp.isPrimary?'primary':'fallback'">
+                <span x-text="grp.isPrimary?'🔥':'📌'"></span>
+                <span x-text="grp.year+' 年 ('+grp.items.length+' 篇)'"></span>
+                <span class="badge" :class="grp.isPrimary?'ok':'warn'" x-text="grp.isPrimary?'最新前沿':'兜底补充'"></span>
+              </div>
+              <div class="topic-paper-grid">
+                <template x-for="p in grp.items" :key="p.paper_uid">
+                  <div class="topic-paper-card">
+                    <div class="topic-paper-title" x-text="p.title"></div>
+                    <div class="topic-paper-meta">
+                      <span class="venue-badge" x-text="p.venue"></span>
+                      <span class="badge" :class="'tier-'+p.tier" x-text="p.tier"></span>
+                      <span class="muted small" x-text="'⭐ '+p.score"></span>
+                    </div>
+                    <div class="topic-paper-tldr" x-text="p.abstract || ''"></div>
+                    <div class="topic-paper-actions">
+                      <a class="btn btn-xs" :href="p.paper_url" target="_blank" x-show="p.paper_url">原文</a>
+                      <a class="btn btn-xs" :href="p.code_url" target="_blank" x-show="p.code_url">💻 代码</a>
+                      <button class="btn btn-xs btn-primary" @click="promoteTopicPaper(p.paper_uid)">升 S 级</button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <div class="panel">
+        <div class="topic-tabs">
+          <button class="tab-btn" :class="{active:topicTab==='subs'}" @click="topicTab='subs';loadTopicSubs()">📌 常驻方向订阅</button>
+          <button class="tab-btn" :class="{active:topicTab==='history'}" @click="topicTab='history';loadTopicHistory()">📜 检索历史</button>
+        </div>
+        <div x-show="topicTab==='subs'">
+          <table class="tbl"><thead><tr><th>方向</th><th>检索式</th><th>上限</th><th>启用</th><th>2026/2025</th><th>操作</th></tr></thead>
+          <tbody><template x-for="s in topicSubscriptions" :key="s.slug">
+            <tr><td x-text="s.name"></td><td class="small" x-text="s.query"></td><td x-text="s.limit"></td>
+            <td><button class="badge" :class="s.enabled?'ok':'warn'" @click="toggleTopicSub(s)" x-text="s.enabled?'启用':'停用'"></button></td>
+            <td x-text="s.primary_count+' / '+s.fallback_count"></td>
+            <td><button class="link" @click="topicForm.query=s.query;previewTopicQuery()">检索</button>
+                <button class="link" @click="removeTopicSub(s)">删除</button></td></tr>
+          </template></tbody></table>
+          <div class="inline-form" style="margin-top:12px">
+            <input type="text" x-model="newTopicSub.name" placeholder="方向名称">
+            <input type="text" x-model="newTopicSub.query" placeholder="检索式（如 agent+图像融合）">
+            <button class="btn btn-sm btn-primary" @click="addTopicSub()">添加订阅</button>
+            <span class="muted small" x-text="topicSubMsg"></span>
+          </div>
+        </div>
+        <div x-show="topicTab==='history'">
+          <table class="tbl"><thead><tr><th>时间</th><th>方向</th><th>检索式</th><th>2026</th><th>2025</th><th>过滤老论文</th><th>新增</th><th>状态</th></tr></thead>
+          <tbody><template x-for="h in topicHistory" :key="h.id">
+            <tr><td x-text="h.created_at"></td><td x-text="h.topic_name"></td><td class="small" x-text="h.raw_query"></td>
+            <td x-text="h.primary_count"></td><td x-text="h.fallback_count"></td><td x-text="h.filtered_old_count"></td>
+            <td x-text="h.new_inserted_count"></td><td><span class="badge" :class="h.status==='SUCCESS'?'ok':'err'" x-text="h.status"></span></td></tr>
+          </template></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 页面10：Prompt 模板工作室 ========== -->
+    <section x-show="view==='prompts'" class="view">
+      <div class="prompt-layout">
+        <div class="panel prompt-list">
+          <h3 style="margin:0 0 12px">📝 模板目录</h3>
+          <div class="prompt-group-label">通用模板</div>
+          <template x-for="t in promptTemplates.filter(x=>!x.match_topics || !x.match_topics.length)" :key="t.id">
+            <div class="prompt-item" :class="{selected:selectedPromptId===t.id}" @click="openPrompt(t.id)">
+              <div class="prompt-item-name" x-text="t.name"></div>
+              <div class="muted small" x-text="'Tier '+t.tier+(t.is_builtin?' · 内置':'')"></div>
+            </div>
+          </template>
+          <div class="prompt-group-label" style="margin-top:14px">方向专属模板</div>
+          <template x-for="t in promptTemplates.filter(x=>x.match_topics && x.match_topics.length)" :key="t.id">
+            <div class="prompt-item" :class="{selected:selectedPromptId===t.id}" @click="openPrompt(t.id)">
+              <div class="prompt-item-name" x-text="t.name"></div>
+              <div class="muted small" x-text="'优先级 '+t.priority+(t.is_builtin?' · 内置':'')"></div>
+            </div>
+          </template>
+        </div>
+        <div class="panel prompt-editor">
+          <template x-if="selectedPromptId">
+            <div class="prompt-editor-body">
+              <div class="inline-form" style="justify-content:space-between">
+                <h3 style="margin:0" x-text="selectedPromptId"></h3>
+                <div class="inline-form">
+                  <button class="btn btn-sm" @click="savePrompt()">💾 保存模板</button>
+                  <button class="btn btn-sm" @click="resetPrompt()">↩️ 恢复默认</button>
+                </div>
+              </div>
+              <div class="var-bar">
+                <span class="muted small">变量：</span>
+                <template x-for="v in ['paper_uid','title','venue','year','tier','figures_markdown','bibtex','content']" :key="v">
+                  <button class="var-pill" @click="insertPromptVar(v)" x-text="'{{'+v+'}}'"></button>
+                </template>
+              </div>
+              <textarea class="prompt-textarea" x-model="promptEditorBody" spellcheck="false"></textarea>
+              <div class="inline-form" style="margin-top:10px">
+                <button class="btn" @click="previewPrompt(promptPreviewPaperUid)">🧪 用真实论文试渲染</button>
+                <input type="text" x-model="promptPreviewPaperUid" placeholder="论文 UID（如 arxiv_2603.00001）" style="min-width:240px">
+              </div>
+              <template x-if="promptPreviewResult">
+                <div class="prompt-preview">
+                  <div class="muted small" x-text="'渲染结果 · '+promptPreviewResult.chars+' 字符'"></div>
+                  <pre x-text="promptPreviewResult.prompt"></pre>
+                </div>
+              </template>
+              <p class="muted small" x-text="promptSaveMsg"></p>
+            </div>
+          </template>
+          <template x-if="!selectedPromptId">
+            <div class="editor-placeholder"><div class="placeholder-icon">📝</div><h3>Prompt 工作室</h3>
+              <p class="muted">从左侧选择模板进行编辑、试渲染与保存</p></div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 页面11：受限论文清单 ========== -->
+    <section x-show="view==='paywall'" class="view">
+      <div class="panel paywall-toolbar">
+        <div class="inline-form" style="justify-content:space-between;flex-wrap:wrap">
+          <h3 style="margin:0">🔒 受限论文清单（Paywall Hub）</h3>
+          <div class="inline-form">
+            <button class="btn btn-sm" @click="paywallExport('md')">📥 导出 MD</button>
+            <button class="btn btn-sm" @click="paywallExport('csv')">📥 导出 CSV</button>
+            <button class="btn btn-sm" @click="paywallScanInbox()">📂 扫描补传目录</button>
+            <button class="btn btn-sm" @click="loadPaywallDomains();showDomains=true">⚙️ 管理域名名单</button>
+          </div>
+        </div>
+        <div class="paywall-stats">
+          <div class="stat-pill" x-text="'待人工处理 '+(paywallStats.PENDING_MANUAL||0)"></div>
+          <div class="stat-pill" x-text="'已补传 '+(paywallStats.PDF_UPLOADED||0)"></div>
+          <div class="stat-pill" x-text="'摘要速览 '+(paywallStats.ABSTRACT_ONLY||0)"></div>
+          <div class="stat-pill" x-text="'已忽略 '+(paywallStats.IGNORED||0)"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="inline-form wrap">
+          <input type="text" x-model="paywallFilter.q" placeholder="搜索标题/UID/DOI" @keyup.enter="loadPaywall()">
+          <select x-model="paywallFilter.publisher" @change="loadPaywall()">
+            <option value="">全部出版商</option><option>IEEE Xplore</option><option>Springer</option>
+            <option>Elsevier</option><option>ACM DL</option><option>Wiley</option><option>Taylor & Francis</option>
+          </select>
+          <select x-model="paywallFilter.manual_status" @change="loadPaywall()">
+            <option value="">全部状态</option><option value="PENDING_MANUAL">待人工处理</option>
+            <option value="ABSTRACT_ONLY">摘要速览</option><option value="PDF_UPLOADED">已补传</option>
+            <option value="IGNORED">已忽略</option>
+          </select>
+          <button class="btn btn-primary" @click="loadPaywall()">筛选</button>
+          <span class="muted small" x-text="paywallMsg"></span>
+        </div>
+      </div>
+
+      <div class="panel table-panel">
+        <div class="table-scroll">
+          <table class="tbl paywall-tbl">
+            <thead><tr><th>标题</th><th>Venue/年份</th><th>Tier</th><th>出版商</th><th>原因</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody><template x-for="p in paywallItems" :key="p.paper_uid">
+              <tr @dragover.prevent @drop.prevent="onPaywallDrop(p.paper_uid, $event)">
+                <td class="title-cell"><div x-text="p.title"></div>
+                  <div class="muted small" x-text="p.doi || p.paper_uid"></div></td>
+                <td x-text="p.venue+' '+p.pub_year"></td>
+                <td><span class="badge" :class="'tier-'+p.tier" x-text="p.tier"></span></td>
+                <td><span class="publisher-badge" x-text="p.publisher"></span></td>
+                <td class="small" x-text="p.block_reason"></td>
+                <td><span class="badge" :class="p.manual_status==='PENDING_MANUAL'?'warn':'ok'" x-text="p.manual_status"></span></td>
+                <td class="ops">
+                  <a class="btn btn-xs" :href="p.landing_url || ('https://doi.org/'+p.doi)" target="_blank" x-show="p.landing_url||p.doi">🔗 官网</a>
+                  <button class="btn btn-xs" @click="paywallRescue(p.paper_uid)">🔎 搜 arXiv</button>
+                  <button class="btn btn-xs btn-primary" @click="paywallUpload(p.paper_uid, null)">📤 补传</button>
+                  <button class="btn btn-xs" @click="paywallFallbackAbstract(p.paper_uid)">📝 转速览</button>
+                  <button class="btn btn-xs" @click="paywallIgnore(p.paper_uid)">🚫 忽略</button>
+                </td>
+              </tr>
+            </template></tbody>
+          </table>
+          <div class="empty-state" x-show="!paywallItems.length"><div class="empty-icon">🔓</div>
+            <div>没有受限论文</div><div class="muted small">命中受限域名或 403/HTML 登录墙的论文会自动登记到这里</div></div>
+        </div>
+      </div>
+
+      <!-- 域名管理弹窗 -->
+      <template x-if="showDomains">
+        <div class="modal-backdrop" @click.self="showDomains=false">
+          <div class="modal">
+            <div class="inline-form" style="justify-content:space-between"><h3 style="margin:0">受限域名名单</h3>
+              <button class="link" @click="showDomains=false">关闭</button></div>
+            <div class="domain-list">
+              <template x-for="d in paywallDomains" :key="d.domain">
+                <div class="domain-item"><span x-text="d.domain"></span><span class="muted small" x-text="d.publisher"></span></div>
+              </template>
+            </div>
+            <div class="inline-form" style="margin-top:12px">
+              <input type="text" x-model="newDomain.domain" placeholder="域名，如 example.com">
+              <input type="text" x-model="newDomain.publisher" placeholder="出版商">
+              <button class="btn btn-sm btn-primary" @click="addPaywallDomain()">添加</button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- ========== 页面12：网站收录中心 ========== -->
+    <section x-show="view==='sites'" class="view" @dragover.prevent @drop.prevent="onSiteFileDrop($event)">
+      <!-- 顶部统计 -->
+      <div class="site-stats">
+        <div class="stat-pill">🌐 公开 <b x-text="siteStats.public||0"></b></div>
+        <div class="stat-pill">🔒 私密 <b x-text="siteStats.private||0"></b></div>
+        <div class="stat-pill">⭐ 置顶 <b x-text="siteStats.pinned||0"></b></div>
+        <div class="stat-pill">💀 死链 <b x-text="siteStats.dead||0"></b></div>
+      </div>
+
+      <!-- 发布闭环提示：收藏变更后需生成导航页并推送到 GitHub Pages -->
+      <template x-if="sitePublish && sitePublish.needs_publish">
+        <div class="catchup-notice" style="margin-top:10px">
+          <span class="catchup-icon">🚀</span>
+          <div class="catchup-text">
+            <b>有网站变更尚未发布到博客</b>
+            <div class="muted small" x-text="'公开 '+sitePublish.public_count+' 个'+(sitePublish.nav_stale?' · 导航页待同步':'')+(sitePublish.git_dirty?' · 有未提交改动':'')+(sitePublish.unpushed_commits?(' · '+sitePublish.unpushed_commits+' 个未推送提交'):'')"></div>
+          </div>
+          <button class="btn btn-sm btn-primary" @click="publishSites()">生成导航页并去发布</button>
+        </div>
+      </template>
+      <template x-if="sitePublish && !sitePublish.needs_publish && sitePublish.public_count>0">
+        <div class="catchup-ok" style="margin-top:10px">✅ 网站导航已同步并发布</div>
+      </template>
+
+      <!-- 快速收藏 -->
+      <div class="panel">
+        <h3 style="margin:0 0 4px">🔖 收藏一个网址</h3>
+        <p class="muted small" style="margin:0 0 12px">登记网址与名称即可，随时打开查找；不抓取网站内容。</p>
+        <div class="inline-form wrap">
+          <input type="text" x-model="siteForm.url" @keyup.enter="saveSite()" placeholder="网址，如 https://huggingface.co" style="min-width:340px">
+          <button class="btn btn-sm" @click="fetchSiteMeta()" title="可选：尝试从网页自动填名称，失败可忽略">🪄 帮我填名称（可选）</button>
+        </div>
+        <div class="site-form-grid">
+          <label>名称（自己好记即可）<input type="text" x-model="siteForm.title" placeholder="如：Hugging Face 模型库"></label>
+          <label>分类<select x-model="siteForm.category_id"><option value="">默认分类</option>
+            <template x-for="c in siteCats" :key="c.id"><option :value="c.id" x-text="c.icon+' '+c.name"></option></template></select></label>
+          <label>标签（逗号分隔，方便检索）<input type="text" x-model="siteForm.tags" placeholder="免费, Agent, 遥感"></label>
+          <label>一句话备注<input type="text" x-model="siteForm.description" placeholder="这个网站是做什么的"></label>
+          <label>个人心得<input type="text" x-model="siteForm.personal_note" placeholder="使用场景 / 推荐理由"></label>
+          <label>星级<select x-model.number="siteForm.rating"><option value="0">—</option><option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option></select></label>
+        </div>
+        <div class="inline-form wrap" style="margin-top:10px">
+          <label class="check-label"><input type="checkbox" x-model="siteForm.is_pinned"> ⭐ 置顶</label>
+          <label class="check-label"><input type="checkbox" x-model="siteForm.is_public"> 🌐 分享到博客导航页</label>
+          <button class="btn btn-primary" @click="saveSite()">➕ 收藏</button>
+          <span class="muted small" x-text="siteMsg"></span>
+        </div>
+      </div>
+
+      <!-- 快捷工具条 -->
+      <div class="panel">
+        <div class="inline-form wrap">
+          <button class="btn btn-sm" @click="showSiteImport=!showSiteImport">📥 批量收藏（多行网址 / 浏览器书签）</button>
+          <button class="btn btn-sm" @click="showSiteCats=!showSiteCats">🏷️ 分类管理</button>
+          <button class="btn btn-sm btn-primary" @click="syncSitesBlog()">🌐 生成博客导航页</button>
+          <button class="btn btn-sm" @click="switchView('git')">🚀 去发布</button>
+          <button class="btn btn-sm" @click="healthCheckSites()" title="可选：检查收藏网址是否还能打开">🩺 检查链接可用性</button>
+        </div>
+        <template x-if="siteTaskId && (siteProgress.percent!==100 || siteLogs.length)">
+          <div class="site-progress">
+            <div class="progress"><div class="progress-bar" :style="'width:'+(siteProgress.percent||0)+'%'"></div></div>
+            <div class="terminal" style="height:140px"><template x-for="(l,i) in siteLogs" :key="i"><div x-text="fmtLogTime(l.timestamp)+' '+l.message"></div></template></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- 批量导入弹窗 -->
+      <template x-if="showSiteImport">
+        <div class="modal-backdrop" @click.self="showSiteImport=false">
+          <div class="modal">
+            <div class="inline-form" style="justify-content:space-between"><h3 style="margin:0">📥 批量导入</h3><button class="link" @click="showSiteImport=false">关闭</button></div>
+            <p class="muted small">每行一个 URL；也可直接拖入 Chrome/Edge 导出的 bookmarks.html 文件。</p>
+            <textarea class="import-textarea" x-model="siteImportText" placeholder="https://a.com&#10;https://b.com"></textarea>
+            <div class="inline-form" style="margin-top:10px">
+              <button class="btn btn-primary" @click="batchImportSites()">导入</button>
+              <label class="btn">📂 选择书签 HTML<input type="file" accept=".html,text/html" style="display:none" @change="onSiteBookmarkFile($event)"></label>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 分类管理弹窗 -->
+      <template x-if="showSiteCats">
+        <div class="modal-backdrop" @click.self="showSiteCats=false">
+          <div class="modal">
+            <div class="inline-form" style="justify-content:space-between"><h3 style="margin:0">🏷️ 分类管理</h3><button class="link" @click="showSiteCats=false">关闭</button></div>
+            <div class="domain-list">
+              <template x-for="c in siteCats" :key="c.id"><div class="domain-item"><span x-text="c.icon+' '+c.name"></span><span class="muted small" x-text="c.slug"></span></div></template>
+            </div>
+            <div class="inline-form wrap" style="margin-top:12px">
+              <input type="text" x-model="newSiteCat.name" placeholder="分类名称">
+              <input type="text" x-model="newSiteCat.slug" placeholder="slug">
+              <input type="text" x-model="newSiteCat.icon" placeholder="🔗" style="width:60px">
+              <button class="btn btn-sm btn-primary" @click="addSiteCategory()">新增分类</button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 编辑收藏弹窗 -->
+      <template x-if="editingSite">
+        <div class="modal-backdrop" @click.self="editingSite=null">
+          <div class="modal">
+            <div class="inline-form" style="justify-content:space-between"><h3 style="margin:0">✏️ 编辑收藏</h3><button class="link" @click="editingSite=null">关闭</button></div>
+            <div class="site-form-grid" style="margin-top:12px">
+              <label>网址<input type="text" x-model="editForm.url"></label>
+              <label>名称<input type="text" x-model="editForm.title"></label>
+              <label>分类<select x-model="editForm.category_id"><option value="">默认分类</option>
+                <template x-for="c in siteCats" :key="c.id"><option :value="c.id" x-text="c.name"></option></template></select></label>
+              <label>标签（逗号分隔）<input type="text" x-model="editForm.tags"></label>
+              <label>一句话备注<input type="text" x-model="editForm.description"></label>
+              <label>个人心得<input type="text" x-model="editForm.personal_note"></label>
+              <label>星级<select x-model.number="editForm.rating"><option value="0">—</option><option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option></select></label>
+            </div>
+            <div class="inline-form wrap" style="margin-top:12px">
+              <label class="check-label"><input type="checkbox" x-model="editForm.is_pinned"> ⭐ 置顶</label>
+              <label class="check-label"><input type="checkbox" x-model="editForm.is_public"> 🌐 分享到博客</label>
+              <button class="btn btn-primary" @click="saveSiteEdit()">💾 保存</button>
+              <span class="muted small" x-text="siteMsg"></span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 筛选栏 -->
+      <div class="panel">
+        <div class="filter-panel-head"><h3 style="margin:0">📚 我的收藏</h3><button class="btn btn-sm" @click="loadSites()">🔄 刷新</button></div>
+        <div class="inline-form wrap" style="margin:12px 0">
+          <input type="text" x-model="siteFilter.q" @input.debounce.400ms="loadSites()" placeholder="🔍 搜索名称/网址/标签/备注" style="min-width:220px">
+          <select x-model="siteFilter.category_id" @change="loadSites()"><option value="">全部分类</option>
+            <template x-for="c in siteCats" :key="c.id"><option :value="c.id" x-text="c.name"></option></template></select>
+          <select x-model="siteFilter.tag" @change="loadSites()"><option value="">全部标签</option>
+            <template x-for="t in allSiteTags()" :key="t"><option :value="t" x-text="t"></option></template></select>
+          <select x-model="siteFilter.sort" @change="loadSites()"><option value="recent">最近收藏</option><option value="rating">⭐ 星级优先</option><option value="visited">🔥 常用优先</option><option value="title">按名称</option></select>
+          <label class="check-label"><input type="checkbox" x-model="siteFilter.is_pinned" true-value="1" false-value="" @change="loadSites()"> 仅置顶</label>
+        </div>
+        <div class="site-list">
+          <template x-for="s in siteItems" :key="s.id">
+            <div class="site-item">
+              <img x-show="s.favicon_url" class="site-favicon" :src="s.favicon_url" @error="$event.target.style.display='none'" alt="" width="28" height="28">
+              <span x-show="!s.favicon_url" class="site-favicon site-favicon-ph">🔖</span>
+              <div class="site-info">
+                <a :href="s.normalized_url" target="_blank" class="site-title" @click="recordVisit(s)" x-text="s.title"></a>
+                <div class="site-meta-line">
+                  <span class="muted small" x-text="s.domain"></span>
+                  <span class="badge" x-text="siteCatName(s.category_id)"></span>
+                  <span class="badge" :class="s.is_public?'ok':'warn'" x-text="s.is_public?'🌐 公开':'🔒 私密'"></span>
+                  <span class="site-stars" x-text="'⭐'.repeat(s.rating||0)" x-show="s.rating"></span>
+                  <span class="muted small" x-show="s.visit_count" x-text="'打开 '+(s.visit_count||0)+' 次'"></span>
+                  <template x-for="t in JSON.parse(s.tags_json||'[]')" :key="t"><span class="badge" x-text="t"></span></template>
+                </div>
+                <div class="muted small" x-show="s.description" x-text="s.description"></div>
+                <div class="site-note" x-show="s.personal_note" x-text="'💡 '+s.personal_note"></div>
+              </div>
+              <div class="site-ops">
+                <button class="btn btn-xs" @click="recordVisitAndOpen(s)" title="在浏览器打开该网址">↗️ 打开</button>
+                <button class="btn btn-xs" @click="copySiteUrl(s)" title="复制网址到剪贴板">📋 复制</button>
+                <button class="btn btn-xs" @click="editSite(s)" title="编辑名称/备注/标签/星级等">✏️ 编辑</button>
+                <button class="btn btn-xs" :class="s.is_pinned?'btn-primary':''" @click="toggleSitePin(s)" :title="s.is_pinned?'取消置顶':'置顶'">
+                  <span x-text="s.is_pinned?'⭐':'☆'"></span> <span x-text="s.is_pinned?'已置顶':'置顶'"></span>
+                </button>
+                <button class="btn btn-xs btn-danger" @click="deleteSite(s)" title="删除该收藏">🗑 删除</button>
+              </div>
+            </div>
+          </template>
+          <div class="empty-state" x-show="!siteItems.length"><div class="empty-icon">🌐</div><div>还没有收录网站</div><div class="muted small">在上方粘贴 URL 开始收录</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

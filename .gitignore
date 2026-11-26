@@ -1,0 +1,32 @@
+# ===== 独立的公开博客仓库（严禁作为子模块混入后端仓）=====
+paper_repo/
+
+# ===== 运行时数据目录（全部忽略，仅保留目录占位）=====
+workspace/*
+!workspace/.gitkeep
+
+# ===== 本地真实配置与密钥（仅提交 config.example.yaml）=====
+config/config.yaml
+config/*.bak
+config/*.tmp
+.env
+.env.*
+
+# ===== Python 与测试产物 =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# ===== 编辑器与系统文件 =====
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.log
