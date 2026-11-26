@@ -8,6 +8,42 @@ PaperFlow每天从 **CVPR / ECCV / ICCV / NeurIPS / ICLR / AAAI / TPAMI / TIP / 
 
 ---
 
+## 单仓三分支架构与新机器还原
+
+本项目使用同一个 GitHub 仓库 `git@github.com:ruY9527/paper_repo.git` 的三条独立分支，不使用 Git 子模块：
+
+| 分支 | 内容 | 本地位置 |
+| :--- | :--- | :--- |
+| `backend` | PaperFlow 后端引擎、测试、示例配置与后端 CI | `paper_analysis/` |
+| `main` | MkDocs 博客源文件与博客部署配置 | `paper_analysis/paper_repo/` |
+| `gh-pages` | GitHub Pages 构建产物，由博客部署流程维护 | 无需单独克隆到后端工作区 |
+
+`paper_analysis/` 与 `paper_analysis/paper_repo/` 是两个独立的 Git 工作区，各自拥有 `.git`。外层 `.gitignore` 忽略 `paper_repo/`，因此后端提交不会混入博客文件；后端 CI 也仅在 `backend` 分支触发，不影响 `main` 分支的博客部署。日常操作时不要在外层切换到 `main`，而应让内层工作区始终停留在 `main`。
+
+在新机器上按顺序分别还原两个分支：
+
+```powershell
+# 1) 后端分支克隆到 paper_analysis
+git clone -b backend --single-branch git@github.com:ruY9527/paper_repo.git paper_analysis
+cd paper_analysis
+
+# 2) 博客 main 分支克隆为独立的内层工作区
+git clone -b main --single-branch git@github.com:ruY9527/paper_repo.git paper_repo
+
+# 3) 准备本地配置并验证环境（真实 config.yaml 不进入 Git）
+Copy-Item config/config.example.yaml config/config.yaml
+pip install -e .
+pytest -v
+
+# 4) 确认双仓分支与远端隔离
+git branch --show-current                         # backend
+git remote get-url origin                         # git@github.com:ruY9527/paper_repo.git
+git -C paper_repo branch --show-current           # main
+git -C paper_repo remote get-url origin           # git@github.com:ruY9527/paper_repo.git
+```
+
+---
+
 ## 一、环境要求
 
 | 项目 | 要求 |
